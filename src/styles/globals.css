@@ -1,0 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add DaisyUI themes if needed */
+@import 'daisyui/dist/full.css';

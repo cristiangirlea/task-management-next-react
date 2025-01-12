@@ -14,5 +14,11 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [require("daisyui")],
+  daisyui: {
+    themes: ["light", "dark"],
+    base: true,  // Enable or disable base styles
+    utils: true, // Enable DaisyUI utilities
+    logs: false, // Disable DaisyUI logs in terminal
+  },
 } satisfies Config;
