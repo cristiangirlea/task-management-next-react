@@ -1,6 +1,6 @@
 "use client";
 
-import { DndContext } from '@dnd-kit/core';
+import { DndContext, DragEndEvent } from '@dnd-kit/core';  // Import the correct event type
 import KanbanColumn from './KanbanColumn';
 
 const KanbanBoard = () => {
@@ -15,8 +15,15 @@ const KanbanBoard = () => {
     );
 };
 
-const handleDragEnd = (event: any) => {
-    console.log('Dragged', event);
+// Use DragEndEvent as the type for the event
+const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over) {
+        console.log(`Dragged ${active.id} to ${over.id}`);
+    } else {
+        console.log(`Dragged ${active.id} but did not drop over any column.`);
+    }
 };
 
 export default KanbanBoard;

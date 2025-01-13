@@ -1,6 +1,6 @@
 import React from 'react';
 import TaskCard from './TaskCard';
-import { Task } from '../types'; // Import from the shared types file
+import { Task } from '../../types/shared'; // Import from the shared types file
 
 interface KanbanColumnProps {
     title: string;

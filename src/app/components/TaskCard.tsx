@@ -1,5 +1,5 @@
 import React from 'react';
-import {Task} from "@/types/shared";
+import {Task} from "../../types/shared";
 
 interface TaskCardProps {
     task: Task;
