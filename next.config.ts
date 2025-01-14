@@ -4,7 +4,7 @@ const rewrites = async (): Promise<{ source: string; destination: string }[]> =>
     return [
         {
             source: '/api/:path*',
-            destination: 'http://localhost:4000/api/:path*', // Forward requests to Express.js backend
+            destination: 'http://localhost:8080/node/api/:path*', // Forward requests to Express.js backend
         },
     ];
 };
