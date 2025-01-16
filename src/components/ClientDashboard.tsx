@@ -11,7 +11,7 @@ const ClientDashboard = () => {
     const [tasks, setTasks] = useState<string[]>([]);
 
     useEffect(() => {
-        const socket: Socket = io('http://localhost:8080/node/');
+        const socket: Socket = io('http://localhost:4000/');
 
         socket.on('message', (msg: string) => console.log('WebSocket message:', msg));
 

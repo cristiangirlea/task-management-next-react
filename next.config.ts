@@ -4,17 +4,24 @@ const rewrites = async (): Promise<{ source: string; destination: string }[]> =>
     return [
         {
             source: '/api/:path*',
-            destination: 'http://localhost:8080/node/api/:path*', // Forward requests to Express.js backend
+            destination: 'http://localhost:4000/api/:path*', // Forward requests to Express.js backend
         },
     ];
 };
 
-const nextConfig: {
-    rewrites: () => Promise<{ source: string; destination: string }[]>;
-    reactStrictMode: boolean;
-} = {
+const nextConfig: NextConfig = {
     reactStrictMode: true,
     rewrites,
+
+    webpack(config, { dev }) {
+        if (dev) {
+            config.watchOptions = {
+                poll: 1000, // Check for changes every second
+                aggregateTimeout: 300, // Delay before rebuilding
+            };
+        }
+        return config;
+    },
 };
 
 export default nextConfig;

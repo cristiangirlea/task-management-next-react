@@ -1,4 +1,7 @@
+"use client";
+
 import KanbanBoard from './components/KanbanBoard';
+import {useEffect} from "react";
 
 export default function HomePage() {
     return (
