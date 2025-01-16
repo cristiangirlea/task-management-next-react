@@ -1,6 +1,6 @@
 import React from 'react';
 import TaskCard from './TaskCard';
-import { Task } from '../../types/shared'; // Import from the shared types file
+import { Task } from '../../types/shared';
 
 interface KanbanColumnProps {
     title: string;
@@ -14,9 +14,9 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status }) => {
     ];
 
     return (
-        <div className="flex flex-col gap-2 p-2 bg-base-100 rounded-lg shadow-md">
-            <h2 className="text-lg font-bold">{title}</h2>
-            <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4 p-4 bg-base-200 rounded-lg shadow-lg w-80">
+            <h2 className="text-xl font-bold text-primary">{title}</h2>
+            <div className="flex flex-col gap-4">
                 {tasks
                     .filter((task) => task.status === status)
                     .map((task) => (

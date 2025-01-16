@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "../styles/globals.css";
+import Navbar from "../components/Navbar";
 
 export const metadata: Metadata = {
     title: "Task Management Kanban Board",
@@ -13,9 +14,10 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en">
-            <body className="bg-base-100 text-base-content min-h-screen">
-                <main className="container mx-auto p-6">{children}</main>
-            </body>
+        <body className="bg-base-100 text-base-content min-h-screen">
+        <Navbar />
+        <main className="container mx-auto p-6">{children}</main>
+        </body>
         </html>
     );
 }

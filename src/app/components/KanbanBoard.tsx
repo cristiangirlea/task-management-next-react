@@ -1,21 +1,23 @@
 "use client";
 
-import { DndContext, DragEndEvent } from '@dnd-kit/core';  // Import the correct event type
+import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import KanbanColumn from './KanbanColumn';
 
 const KanbanBoard = () => {
     return (
         <DndContext onDragEnd={handleDragEnd}>
-            <div className="p-4 flex gap-4 overflow-x-auto">
+            <div className="flex gap-6 overflow-x-auto p-6 bg-gray-50 min-h-screen">
                 <KanbanColumn title="To Do" status="todo" />
                 <KanbanColumn title="In Progress" status="in-progress" />
                 <KanbanColumn title="Done" status="done" />
+                <div className="p-4">
+                    <button className="btn btn-primary">Add New Task</button>
+                </div>
             </div>
         </DndContext>
     );
 };
 
-// Use DragEndEvent as the type for the event
 const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
