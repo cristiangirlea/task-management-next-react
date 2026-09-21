@@ -58,6 +58,24 @@ together with the `claude mcp add --transport http task-board <API origin>/mcp -
 "Authorization: Bearer <token>"` command that connects Claude Code to the API's `/mcp` endpoint.
 A `403` from any owner-only action is shown as "Only workspace owners can do this."
 
+## Password recovery and email verification
+
+`/login` links to `/forgot-password`, which posts an address to `POST /forgot-password` and then always
+shows the same neutral panel ("If an account exists for that address, we've sent a reset link") so the
+form never reveals whether an account exists. The emailed link opens `/reset-password?token=…&email=…`:
+the address is prefilled read-only, the new password needs at least 8 characters and a matching
+confirmation, and `POST /reset-password` returns validation errors per field. A bad or expired token comes
+back as an error on `token`/`email` and is shown as a form-level alert with a link to request a new one.
+The reset revokes every session token of that account server-side, so the page does not sign anyone in; it
+shows a success panel with a "Sign in" link. Verification links point at the API, which verifies the
+address itself and redirects the browser to `/verify-email?status=success|invalid|expired|already-verified`
+— the frontend only reads that parameter and renders the matching card, offering a "Resend verification
+email" button (`POST /email/verification-notification`, whose `429` becomes "Please wait a moment before
+trying again") to signed-in viewers when the link was expired or invalid. Signed-in users whose
+`email_verified_at` is still null also see a dismissible banner above the board with the same resend
+action; the dismissal is kept in `sessionStorage`, so it comes back in a new tab. Both query-string pages
+are client components wrapped in `<Suspense>`, which `useSearchParams` requires for the static build.
+
 ## Scripts
 
 | Script               | What it does                          |
@@ -71,9 +89,12 @@ A `403` from any owner-only action is shown as "Only workspace owners can do thi
 ## Project layout
 
 ```
-src/app/            routes: / (board), /login, /register, /settings, /invite/[token], layout
-src/components/     Navbar, RequireAuth, Toast, forms/, auth/, board/, settings/, invite/
-src/hooks/          useProjects, useTasks, useBoardDnd, useResource, useSubmit, useToast
+src/app/            routes: / (board), /login, /register, /forgot-password, /reset-password,
+                    /verify-email, /settings, /invite/[token], layout
+src/components/     Navbar, RequireAuth, Toast, VerifyEmailBanner, forms/, auth/, board/,
+                    settings/, invite/
+src/hooks/          useProjects, useTasks, useBoardDnd, useResource, useSubmit, useToast,
+                    useResendVerification
 src/lib/            api.ts (HTTP client), auth.tsx, board.ts (pure board logic), storage.ts,
                     workspace.ts (settings helpers), clipboard.ts
 src/types/          shared API types

@@ -58,6 +58,11 @@ export default function LoginPage() {
                     onChange={setPassword}
                     errors={errors.password}
                 />
+                <div className="-mt-1 text-right">
+                    <Link href="/forgot-password" className="link link-primary text-sm">
+                        Forgot your password?
+                    </Link>
+                </div>
                 <FormAlert message={message} />
                 <button type="submit" className="btn btn-primary mt-2" disabled={submitting}>
                     {submitting ? <span className="loading loading-spinner loading-sm" /> : 'Sign in'}

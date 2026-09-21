@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Toast from '@/components/Toast';
+import VerifyEmailBanner from '@/components/VerifyEmailBanner';
 import { useProjects } from '@/hooks/useProjects';
 import { useToast } from '@/hooks/useToast';
 import { PROJECT_KEY, readStorage, writeStorage } from '@/lib/storage';
@@ -41,6 +42,7 @@ export default function BoardPage() {
 
     return (
         <div className="flex flex-col gap-4">
+            <VerifyEmailBanner />
             <ProjectSelector
                 projects={projects}
                 loading={loading}

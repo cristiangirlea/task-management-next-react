@@ -15,6 +15,8 @@ export type User = {
     name: string;
     email: string;
     role: Role;
+    /** Null until the address behind the verification email has been confirmed. */
+    email_verified_at: string | null;
     tenant?: Tenant;
     created_at: string;
     updated_at: string;
@@ -59,6 +61,16 @@ export type RegisterInput = {
 };
 
 export type LoginInput = { email: string; password: string };
+
+export type ForgotPasswordInput = { email: string };
+
+export type ResetPasswordInput = {
+    /** From the `token` query parameter of the emailed reset link. */
+    token: string;
+    email: string;
+    password: string;
+    password_confirmation: string;
+};
 
 export type TenantInput = { name: string };
 

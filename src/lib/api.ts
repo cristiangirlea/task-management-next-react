@@ -5,6 +5,7 @@ import type {
     AuthPayload,
     CreatedApiToken,
     CreateTaskInput,
+    ForgotPasswordInput,
     Invitation,
     InvitationInput,
     InvitationPreview,
@@ -13,6 +14,7 @@ import type {
     Project,
     ProjectInput,
     RegisterInput,
+    ResetPasswordInput,
     Task,
     TaskStatus,
     Tenant,
@@ -129,6 +131,18 @@ export const login = (input: LoginInput) =>
 export const logout = () => request<unknown>('POST', '/logout');
 
 export const getUser = () => request<User>('GET', '/user');
+
+// Password recovery and email verification
+/** Always succeeds, even for an unknown address: the API never reveals whether an account exists. */
+export const forgotPassword = (input: ForgotPasswordInput) =>
+    request<void>('POST', '/forgot-password', { body: input, auth: false });
+
+/** On success the API revokes every token of that account, so the user has to sign in again. */
+export const resetPassword = (input: ResetPasswordInput) =>
+    request<void>('POST', '/reset-password', { body: input, auth: false });
+
+/** Sends the verification email again; the endpoint is throttled and answers 429 when called too often. */
+export const resendVerificationEmail = () => request<void>('POST', '/email/verification-notification');
 
 // Projects
 export const listProjects = () => request<Project[]>('GET', '/projects');
