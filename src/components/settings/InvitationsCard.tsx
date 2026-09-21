@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useCallback, useState, type FormEvent } from 'react';
 import { FormAlert, TextField } from '@/components/forms/Fields';
 import { useResource } from '@/hooks/useResource';
 import { useSubmit } from '@/hooks/useSubmit';
@@ -14,7 +14,11 @@ import { ConfirmButton, EmptyState, ListSkeleton, LoadError, SettingsCard } from
 type Props = { isOwner: boolean; notify: Notify };
 
 export default function InvitationsCard({ isOwner, notify }: Props) {
-    const { data: invitations, setData, loading, error, refresh } = useResource<Invitation[]>(api.listInvitations, []);
+    // Only owners may list invitations: the accept link is the invitee's
+    // credential, so the API refuses members. Skip the request rather than
+    // showing them a forbidden error.
+    const load = useCallback(() => (isOwner ? api.listInvitations() : Promise.resolve<Invitation[]>([])), [isOwner]);
+    const { data: invitations, setData, loading, error, refresh } = useResource<Invitation[]>(load, []);
     const [email, setEmail] = useState('');
     const [created, setCreated] = useState<Invitation | null>(null);
     const [revokingId, setRevokingId] = useState<number | null>(null);
@@ -49,6 +53,9 @@ export default function InvitationsCard({ isOwner, notify }: Props) {
 
     return (
         <SettingsCard title="Invitations" description="People who have been invited but have not joined yet.">
+            {!isOwner && (
+                <EmptyState>Only workspace owners can see and manage invitations.</EmptyState>
+            )}
             {isOwner && (
                 <form onSubmit={invite} className="flex flex-col gap-2 sm:flex-row sm:items-end">
                     <TextField
@@ -81,7 +88,7 @@ export default function InvitationsCard({ isOwner, notify }: Props) {
                     <CopyField value={created.accept_url} label="Invitation link" />
                 </div>
             )}
-            {loading ? (
+            {!isOwner ? null : loading ? (
                 <ListSkeleton rows={2} />
             ) : error ? (
                 <LoadError message={error} onRetry={() => void refresh()} />
