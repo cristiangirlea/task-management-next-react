@@ -1,23 +1,14 @@
 import type { NextConfig } from 'next';
 
-const rewrites = async (): Promise<{ source: string; destination: string }[]> => {
-    return [
-        {
-            source: '/api/:path*',
-            destination: 'http://localhost:4000/api/:path*', // Forward requests to Express.js backend
-        },
-    ];
-};
-
 const nextConfig: NextConfig = {
     reactStrictMode: true,
-    rewrites,
 
     webpack(config, { dev }) {
         if (dev) {
+            // Polling keeps hot reload working when the app runs inside Docker.
             config.watchOptions = {
-                poll: 1000, // Check for changes every second
-                aggregateTimeout: 300, // Delay before rebuilding
+                poll: 1000,
+                aggregateTimeout: 300,
             };
         }
         return config;

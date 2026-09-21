@@ -1,49 +1,37 @@
-"use client";
+'use client';
 
-import { usePathname } from "next/navigation";
+import Link from 'next/link';
+import { useAuth } from '@/lib/auth';
 
-const Navbar = () => {
-    const pathname = usePathname();
-
-    const navItems = [
-        { name: "Tasks", href: "/tasks" },
-        { name: "About", href: "/about" },
-        { name: "Profile", href: "/profile" },
-    ];
+export default function Navbar() {
+    const { user, loading, logout } = useAuth();
 
     return (
-        <div className="navbar bg-base-100 shadow-md sticky top-0 z-10">
+        <header className="navbar sticky top-0 z-20 border-b border-base-300 bg-base-100">
             <div className="flex-1">
-                <a
-                    href="/"
-                    className="text-xl font-bold tracking-wide text-primary"
-                >
-                    <span className="text-purple-500">Task</span>{" "}
-                    <span className="text-pink-500">Manager</span>
-                </a>
+                <Link href="/" className="btn btn-ghost text-xl">
+                    Task Board
+                </Link>
             </div>
-            <div className="flex-none">
-                <ul className="menu menu-horizontal px-1 space-x-4">
-                    {navItems.map((item) => (
-                        <li key={item.name}>
-                            <a
-                                href={item.href}
-                                className={`${
-                                    pathname === item.href
-                                        ? "text-primary border-b-2 border-primary"
-                                        : "hover:text-primary"
-                                }`}
-                            >
-                                {item.name}
-                            </a>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            {/* Separator */}
-            <div className="w-full h-px bg-gray-200 mt-2"></div>
-        </div>
+            <nav className="flex items-center gap-2">
+                {loading ? null : user ? (
+                    <>
+                        <span className="hidden text-sm sm:inline">{user.name}</span>
+                        <button type="button" className="btn btn-outline btn-sm" onClick={() => void logout()}>
+                            Logout
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <Link href="/login" className="btn btn-ghost btn-sm">
+                            Log in
+                        </Link>
+                        <Link href="/register" className="btn btn-primary btn-sm">
+                            Register
+                        </Link>
+                    </>
+                )}
+            </nav>
+        </header>
     );
-};
-
-export default Navbar;
+}
