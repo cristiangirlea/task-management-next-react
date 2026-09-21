@@ -46,6 +46,18 @@ changes status). If that fails, the board refetches and shows an error toast.
 
 Because the API URL is baked in at build time (`NEXT_PUBLIC_*`), set it before `npm run build`.
 
+## Settings and invitations
+
+`/settings` manages the workspace: owners can rename it, remove members, invite people by email
+(`POST /tenant/invitations`) and revoke pending invitations; members see the same lists read-only.
+An invitation is emailed by the API and also shown as a link you can copy; it points at
+`/invite/[token]`, a public page that previews the invite (`GET /invitations/{token}`) and, once
+the invitee picks a name and password, creates their account and signs them in. Settings also
+issues personal API tokens (`/tokens`) for MCP clients: the plain token is shown exactly once,
+together with the `claude mcp add --transport http task-board <API origin>/mcp --header
+"Authorization: Bearer <token>"` command that connects Claude Code to the API's `/mcp` endpoint.
+A `403` from any owner-only action is shown as "Only workspace owners can do this."
+
 ## Scripts
 
 | Script               | What it does                          |
@@ -59,9 +71,10 @@ Because the API URL is baked in at build time (`NEXT_PUBLIC_*`), set it before `
 ## Project layout
 
 ```
-src/app/            routes: / (board), /login, /register, layout
-src/components/     Navbar, RequireAuth, Toast, forms/, auth/, board/
-src/hooks/          useProjects, useTasks, useBoardDnd, useSubmit, useToast
-src/lib/            api.ts (HTTP client), auth.tsx, board.ts (pure board logic), storage.ts
+src/app/            routes: / (board), /login, /register, /settings, /invite/[token], layout
+src/components/     Navbar, RequireAuth, Toast, forms/, auth/, board/, settings/, invite/
+src/hooks/          useProjects, useTasks, useBoardDnd, useResource, useSubmit, useToast
+src/lib/            api.ts (HTTP client), auth.tsx, board.ts (pure board logic), storage.ts,
+                    workspace.ts (settings helpers), clipboard.ts
 src/types/          shared API types
 ```

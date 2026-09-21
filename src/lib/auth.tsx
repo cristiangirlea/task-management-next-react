@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { LoginInput, RegisterInput, User } from '@/types';
+import type { AcceptInvitationInput, LoginInput, RegisterInput, User } from '@/types';
 import * as api from './api';
 
 type AuthContextValue = {
@@ -12,6 +12,8 @@ type AuthContextValue = {
     loading: boolean;
     login: (input: LoginInput) => Promise<void>;
     register: (input: RegisterInput) => Promise<void>;
+    /** Accepts a workspace invitation; on success the new account is signed in. */
+    acceptInvitation: (token: string, input: AcceptInvitationInput) => Promise<void>;
     logout: () => Promise<void>;
 };
 
@@ -79,6 +81,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         [startSession],
     );
 
+    const acceptInvitation = useCallback(
+        async (token: string, input: AcceptInvitationInput) => startSession(await api.acceptInvitation(token, input)),
+        [startSession],
+    );
+
     const logout = useCallback(async () => {
         try {
             await api.logout();
@@ -90,8 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, [clearSession, router]);
 
     const value = useMemo(
-        () => ({ user, token, loading, login, register, logout }),
-        [user, token, loading, login, register, logout],
+        () => ({ user, token, loading, login, register, acceptInvitation, logout }),
+        [user, token, loading, login, register, acceptInvitation, logout],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

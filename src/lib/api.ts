@@ -1,12 +1,22 @@
 import type {
+    AcceptInvitationInput,
+    ApiToken,
+    ApiTokenInput,
     AuthPayload,
+    CreatedApiToken,
     CreateTaskInput,
+    Invitation,
+    InvitationInput,
+    InvitationPreview,
     LoginInput,
+    Member,
     Project,
     ProjectInput,
     RegisterInput,
     Task,
     TaskStatus,
+    Tenant,
+    TenantInput,
     UpdateTaskInput,
     User,
     ValidationErrors,
@@ -14,6 +24,9 @@ import type {
 import { TOKEN_KEY, readStorage, writeStorage } from './storage';
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/+$/, '');
+
+/** The API host without the `/api` prefix, e.g. for the MCP endpoint at `<origin>/mcp`. */
+export const API_ORIGIN = BASE_URL.replace(/\/api$/, '');
 
 export class ApiError extends Error {
     readonly status: number;
@@ -145,3 +158,35 @@ export const deleteTask = (id: number) => request<void>('DELETE', `/tasks/${id}`
 
 export const reorderTasks = (status: TaskStatus, taskIds: number[]) =>
     request<Task[]>('POST', '/tasks/reorder', { body: { status, task_ids: taskIds } });
+
+// Workspace
+export const getTenant = () => request<Tenant>('GET', '/tenant');
+
+export const updateTenant = (input: TenantInput) => request<Tenant>('PUT', '/tenant', { body: input });
+
+// Members
+export const listMembers = () => request<Member[]>('GET', '/tenant/members');
+
+export const removeMember = (id: number) => request<void>('DELETE', `/tenant/members/${id}`);
+
+// Invitations
+export const listInvitations = () => request<Invitation[]>('GET', '/tenant/invitations');
+
+export const createInvitation = (input: InvitationInput) =>
+    request<Invitation>('POST', '/tenant/invitations', { body: input });
+
+export const revokeInvitation = (id: number) => request<void>('DELETE', `/tenant/invitations/${id}`);
+
+export const getInvitation = (token: string) =>
+    request<InvitationPreview>('GET', `/invitations/${encodeURIComponent(token)}`, { auth: false });
+
+export const acceptInvitation = (token: string, input: AcceptInvitationInput) =>
+    request<AuthPayload>('POST', `/invitations/${encodeURIComponent(token)}/accept`, { body: input, auth: false });
+
+// Personal API tokens (used by MCP clients such as Claude Code)
+export const listTokens = () => request<ApiToken[]>('GET', '/tokens');
+
+export const createToken = (input: ApiTokenInput) =>
+    request<CreatedApiToken>('POST', '/tokens', { body: input });
+
+export const revokeToken = (id: number) => request<void>('DELETE', `/tokens/${id}`);

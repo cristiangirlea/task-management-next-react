@@ -8,10 +8,13 @@ export type Tenant = {
     updated_at: string;
 };
 
+export type Role = 'owner' | 'member';
+
 export type User = {
     id: number;
     name: string;
     email: string;
+    role: Role;
     tenant?: Tenant;
     created_at: string;
     updated_at: string;
@@ -56,6 +59,56 @@ export type RegisterInput = {
 };
 
 export type LoginInput = { email: string; password: string };
+
+export type TenantInput = { name: string };
+
+export type Member = {
+    id: number;
+    name: string;
+    email: string;
+    role: Role;
+    created_at: string;
+};
+
+export type Invitation = {
+    id: number;
+    email: string;
+    invited_by: { id: number; name: string } | null;
+    expires_at: string;
+    accept_url: string;
+    created_at: string;
+};
+
+export type InvitationInput = { email: string };
+
+export type InvitationStatus = 'pending' | 'expired' | 'accepted';
+
+/** What a visitor of /invite/[token] sees before accepting (public endpoint). */
+export type InvitationPreview = {
+    workspace: { name: string };
+    email: string;
+    invited_by: string | null;
+    expires_at: string;
+    status: InvitationStatus;
+};
+
+export type AcceptInvitationInput = {
+    name: string;
+    password: string;
+    password_confirmation: string;
+};
+
+export type ApiToken = {
+    id: number;
+    name: string;
+    last_used_at: string | null;
+    created_at: string;
+};
+
+export type ApiTokenInput = { name: string };
+
+/** Returned once, right after creation; the plain token is never shown again. */
+export type CreatedApiToken = { id: number; name: string; token: string };
 
 export type ProjectInput = { name: string; description?: string | null };
 
