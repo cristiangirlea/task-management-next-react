@@ -3,6 +3,7 @@ import type {
     ApiToken,
     ApiTokenInput,
     AuthPayload,
+    Billing,
     CreatedApiToken,
     CreateTaskInput,
     ForgotPasswordInput,
@@ -13,6 +14,7 @@ import type {
     Member,
     Project,
     ProjectInput,
+    RedirectUrl,
     RegisterInput,
     ResetPasswordInput,
     Task,
@@ -27,8 +29,16 @@ import { TOKEN_KEY, readStorage, writeStorage } from './storage';
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api').replace(/\/+$/, '');
 
-/** The API host without the `/api` prefix, e.g. for the MCP endpoint at `<origin>/mcp`. */
-export const API_ORIGIN = BASE_URL.replace(/\/api$/, '');
+/**
+ * The API host without the `/api` prefix, e.g. for the MCP endpoint at
+ * `<origin>/mcp`. A relative base (the production image uses `/api`) means the
+ * API is served from the page's own origin.
+ */
+export function apiOrigin(): string {
+    const origin = BASE_URL.replace(/\/api$/, '');
+    if (/^https?:\/\//.test(origin) || typeof window === 'undefined') return origin;
+    return `${window.location.origin}${origin}`;
+}
 
 export class ApiError extends Error {
     readonly status: number;
@@ -196,6 +206,15 @@ export const getInvitation = (token: string) =>
 
 export const acceptInvitation = (token: string, input: AcceptInvitationInput) =>
     request<AuthPayload>('POST', `/invitations/${encodeURIComponent(token)}/accept`, { body: input, auth: false });
+
+// Billing
+export const getBilling = () => request<Billing>('GET', '/billing');
+
+/** A Stripe Checkout page for the Team plan (owners). */
+export const startCheckout = () => request<RedirectUrl>('POST', '/billing/checkout');
+
+/** The Stripe billing portal: card, invoices, cancellation (owners). */
+export const openBillingPortal = () => request<RedirectUrl>('POST', '/billing/portal');
 
 // Personal API tokens (used by MCP clients such as Claude Code)
 export const listTokens = () => request<ApiToken[]>('GET', '/tokens');

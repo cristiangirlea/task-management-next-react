@@ -17,6 +17,10 @@ Copy `.env.example` to `.env.local` and adjust as needed:
 | --------------------- | --------------------------- | ---------------------------------------------- |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000/api` | Base URL of the Laravel API (no trailing slash) |
 
+`NEXT_PUBLIC_API_URL` is baked in at build time. It may be relative: the production image is built
+with `/api`, which means "the API on this page's own origin" (the front proxy routes `/api` and
+`/mcp` to Laravel), so one image works on any domain.
+
 ## Getting started
 
 ```bash
@@ -58,6 +62,19 @@ together with the `claude mcp add --transport http task-board <API origin>/mcp -
 "Authorization: Bearer <token>"` command that connects Claude Code to the API's `/mcp` endpoint.
 A `403` from any owner-only action is shown as "Only workspace owners can do this."
 
+## Plan and billing
+
+The **Plan and billing** card (`/settings#billing`) shows the plan from `GET /billing`: Free
+(up to 3 members, pending invitations included, with a seat meter) or Team (per member, no
+limit), plus a warning when Stripe could not charge the card. Owners on Free get **Upgrade to
+Team**, which asks the API for a Stripe Checkout URL (`POST /billing/checkout`) and sends the
+browser there; owners on Team get **Manage billing**, which opens the Stripe billing portal
+(`POST /billing/portal`). Stripe returns to `/settings?billing=success|cancel`; after a success
+the card polls for a few seconds until the webhook has switched the workspace to Team.
+
+Inviting past the free limit is a `402` from the API; the invitations card shows its message with
+a link to the billing card, and the invite page tells an invitee when the workspace is full.
+
 ## Password recovery and email verification
 
 `/login` links to `/forgot-password`, which posts an address to `POST /forgot-password` and then always
@@ -81,7 +98,7 @@ are client components wrapped in `<Suspense>`, which `useSearchParams` requires 
 | Script               | What it does                          |
 | -------------------- | ------------------------------------- |
 | `npm run dev`        | Start the dev server on port 3000     |
-| `npm run build`      | Production build                      |
+| `npm run build`      | Production build (also a self-contained server in `.next/standalone`) |
 | `npm run start`      | Serve the production build            |
 | `npm run lint`       | ESLint (`next lint`)                  |
 | `npx tsc --noEmit`   | Type-check without emitting           |

@@ -8,13 +8,20 @@ import { formatDate, workspaceError } from '@/lib/workspace';
 import type { Member, Role, User } from '@/types';
 import { ConfirmButton, EmptyState, ListSkeleton, LoadError, SettingsCard } from './SettingsCard';
 
-type Props = { user: User; notify: Notify };
+type Props = {
+    user: User;
+    notify: Notify;
+    /** Seats the plan allows; null when unlimited, undefined while unknown. */
+    seatLimit?: number | null;
+    /** Called after the member list changes, so the seat count elsewhere can follow. */
+    onChange?: () => void;
+};
 
 export function RoleBadge({ role }: { role: Role }) {
     return <span className={`badge badge-sm ${role === 'owner' ? 'badge-primary' : 'badge-ghost'}`}>{role}</span>;
 }
 
-export default function MembersCard({ user, notify }: Props) {
+export default function MembersCard({ user, notify, seatLimit, onChange }: Props) {
     const { data: members, setData, loading, error, refresh } = useResource<Member[]>(api.listMembers, []);
     const [removingId, setRemovingId] = useState<number | null>(null);
     const isOwner = user.role === 'owner';
@@ -25,6 +32,7 @@ export default function MembersCard({ user, notify }: Props) {
             await api.removeMember(member.id);
             setData((prev) => prev.filter((m) => m.id !== member.id));
             notify('success', `${member.name} was removed from the workspace`);
+            onChange?.();
         } catch (err) {
             notify('error', workspaceError(err));
         } finally {
@@ -36,7 +44,7 @@ export default function MembersCard({ user, notify }: Props) {
     const canRemove = (member: Member) => isOwner && member.role !== 'owner' && member.id !== user.id;
 
     return (
-        <SettingsCard title="Members" description="Everyone who can sign in to this workspace.">
+        <SettingsCard title="Members" description={`Everyone who can sign in to this workspace.${seatSummary(loading, members.length, seatLimit)}`}>
             {loading ? (
                 <ListSkeleton />
             ) : error ? (
@@ -88,4 +96,9 @@ export default function MembersCard({ user, notify }: Props) {
             )}
         </SettingsCard>
     );
+}
+
+function seatSummary(loading: boolean, count: number, limit: number | null | undefined): string {
+    if (loading || limit === undefined) return '';
+    return limit === null ? ` ${count} ${count === 1 ? 'member' : 'members'}.` : ` ${count} of ${limit} seats used.`;
 }

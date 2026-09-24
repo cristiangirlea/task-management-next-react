@@ -11,9 +11,14 @@ import type { Invitation } from '@/types';
 import { CopyButton, CopyField } from './CopyButton';
 import { ConfirmButton, EmptyState, ListSkeleton, LoadError, SettingsCard } from './SettingsCard';
 
-type Props = { isOwner: boolean; notify: Notify };
+type Props = {
+    isOwner: boolean;
+    notify: Notify;
+    /** Called after an invitation is sent or revoked: pending invitations hold seats. */
+    onChange?: () => void;
+};
 
-export default function InvitationsCard({ isOwner, notify }: Props) {
+export default function InvitationsCard({ isOwner, notify, onChange }: Props) {
     // Only owners may list invitations: the accept link is the invitee's
     // credential, so the API refuses members. Skip the request rather than
     // showing them a forbidden error.
@@ -22,7 +27,7 @@ export default function InvitationsCard({ isOwner, notify }: Props) {
     const [email, setEmail] = useState('');
     const [created, setCreated] = useState<Invitation | null>(null);
     const [revokingId, setRevokingId] = useState<number | null>(null);
-    const { submitting, errors, message, run } = useSubmit(workspaceError);
+    const { submitting, errors, message, status, run } = useSubmit(workspaceError);
 
     const invite = async (event: FormEvent) => {
         event.preventDefault();
@@ -34,6 +39,7 @@ export default function InvitationsCard({ isOwner, notify }: Props) {
         if (ok) {
             setEmail('');
             notify('success', 'Invitation sent');
+            onChange?.();
         }
     };
 
@@ -44,6 +50,7 @@ export default function InvitationsCard({ isOwner, notify }: Props) {
             setData((prev) => prev.filter((i) => i.id !== invitation.id));
             setCreated((current) => (current?.id === invitation.id ? null : current));
             notify('success', 'Invitation revoked');
+            onChange?.();
         } catch (err) {
             notify('error', workspaceError(err));
         } finally {
@@ -74,6 +81,11 @@ export default function InvitationsCard({ isOwner, notify }: Props) {
                 </form>
             )}
             {isOwner && <FormAlert message={message} />}
+            {isOwner && status === 402 && (
+                <a href="#billing" className="link link-primary text-sm">
+                    See plans and upgrade
+                </a>
+            )}
             {created && (
                 <div className="flex flex-col gap-2 rounded-box border border-success/40 bg-success/10 p-3 text-sm">
                     <div className="flex items-start justify-between gap-2">

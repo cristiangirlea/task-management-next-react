@@ -1,12 +1,39 @@
+export type Plan = 'free' | 'team';
+
 export type Tenant = {
     id: number;
     name: string;
     slug: string;
     domain: string | null;
     settings: Record<string, unknown> | null;
+    plan?: Plan;
+    users_count?: number;
     created_at: string;
     updated_at: string;
 };
+
+/** `canceled`: cancelled but paid up until `ends_at`. `none`: not subscribed. */
+export type BillingStatus = 'none' | 'active' | 'past_due' | 'canceled';
+
+export type Billing = {
+    plan: Plan;
+    status: BillingStatus;
+    /**
+     * `used` is members; `pending` is invitations not yet accepted, which also
+     * hold a seat on the free plan. `limit` is null on Team (no limit).
+     */
+    seats: { used: number; pending: number; limit: number | null };
+    free_seats: number;
+    seat_price_cents: number;
+    currency: string;
+    ends_at: string | null;
+    has_payment_problem: boolean;
+    /** Whether the viewer may upgrade or open the billing portal (owners). */
+    can_manage: boolean;
+};
+
+/** A Stripe-hosted page to send the browser to. */
+export type RedirectUrl = { url: string };
 
 export type Role = 'owner' | 'member';
 

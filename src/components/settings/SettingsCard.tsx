@@ -2,12 +2,12 @@
 
 import { useState, type ReactNode } from 'react';
 
-type CardProps = { title: string; description?: string; children: ReactNode };
+type CardProps = { title: string; description?: string; id?: string; children: ReactNode };
 
-/** One section of the settings page. */
-export function SettingsCard({ title, description, children }: CardProps) {
+/** One section of the settings page. `id` makes it a link target (`#billing`). */
+export function SettingsCard({ title, description, id, children }: CardProps) {
     return (
-        <section className="card bg-base-100 shadow-sm" aria-label={title}>
+        <section id={id} className="card scroll-mt-20 bg-base-100 shadow-sm" aria-label={title}>
             <div className="card-body gap-3 p-4 sm:p-6">
                 <h2 className="card-title">{title}</h2>
                 {description && <p className="-mt-1 text-sm text-base-content/70">{description}</p>}

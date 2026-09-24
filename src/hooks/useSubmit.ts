@@ -12,10 +12,13 @@ export function useSubmit(format: (error: unknown) => string = errorMessage) {
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState<ValidationErrors>({});
     const [message, setMessage] = useState<string | null>(null);
+    /** HTTP status of the last failure (0 when the API was unreachable), for status-specific UI. */
+    const [status, setStatus] = useState<number | null>(null);
 
     const reset = useCallback(() => {
         setErrors({});
         setMessage(null);
+        setStatus(null);
     }, []);
 
     /** Runs `action`, capturing API errors. Resolves to true when it succeeded. */
@@ -24,12 +27,14 @@ export function useSubmit(format: (error: unknown) => string = errorMessage) {
             setSubmitting(true);
             setErrors({});
             setMessage(null);
+            setStatus(null);
             try {
                 await action();
                 return true;
             } catch (err) {
                 setErrors(err instanceof ApiError && err.errors ? err.errors : {});
                 setMessage(format(err));
+                setStatus(err instanceof ApiError ? err.status : null);
                 return false;
             } finally {
                 setSubmitting(false);
@@ -38,5 +43,5 @@ export function useSubmit(format: (error: unknown) => string = errorMessage) {
         [format],
     );
 
-    return { submitting, errors, message, run, reset };
+    return { submitting, errors, message, status, run, reset };
 }
