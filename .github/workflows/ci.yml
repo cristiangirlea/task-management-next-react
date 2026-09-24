@@ -28,3 +28,29 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  image:
+    name: Build and run the production image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: task-management-web:ci
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
+      - name: Serve a page
+        run: |
+          docker run -d --name web -p 3000:3000 task-management-web:ci
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:3000/login && break; sleep 1; done
+          docker logs web
+          curl -sf http://127.0.0.1:3000/login | grep -q '/_next/static/'
+          # The image must be built for the relative "/api", not the local-dev default.
+          if docker exec web grep -rlq 'localhost:8000' .next/static; then echo "dev API URL compiled into the bundle"; exit 1; fi

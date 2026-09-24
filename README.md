@@ -93,6 +93,16 @@ trying again") to signed-in viewers when the link was expired or invalid. Signed
 action; the dismissal is kept in `sessionStorage`, so it comes back in a new tab. Both query-string pages
 are client components wrapped in `<Suspense>`, which `useSearchParams` requires for the static build.
 
+## Production image
+
+`Dockerfile` builds the standalone server (Node 22, non-root) on port 3000 with
+`NEXT_PUBLIC_API_URL=/api` baked in, for use behind a proxy that routes `/api` and `/mcp` to
+Laravel on the same origin (see the production stack in
+[task-management-docker](https://github.com/cristiangirlea/task-management-docker)). Pass
+`--build-arg NEXT_PUBLIC_API_URL=https://api.example.com/api` to target a separate API host.
+CI builds and runs the image on every push; `release.yml` publishes it to
+`ghcr.io/cristiangirlea/task-management-web` from `master` and `v*` tags.
+
 ## Scripts
 
 | Script               | What it does                          |
