@@ -114,7 +114,11 @@ export type Invitation = {
     email: string;
     invited_by: { id: number; name: string } | null;
     expires_at: string;
-    accept_url: string;
+    /**
+     * The link to accept. Only in the response that issued it (sending or
+     * re-sending): the API stores just a hash, so it cannot be read again.
+     */
+    accept_url?: string;
     created_at: string;
 };
 
