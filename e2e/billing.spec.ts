@@ -72,6 +72,20 @@ test('returning from checkout confirms the Team plan', async ({ page }) => {
     await expect(membersCard(page)).toContainText('1 member.');
 });
 
+test('a payment Stripe never confirms keeps the upgrade off and says so', async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.goto('/settings?billing=success');
+
+    const card = billingCard(page);
+    await expect(card.getByText('Stripe has not confirmed your payment yet')).toBeVisible({ timeout: 30_000 });
+    await expect(card.getByRole('button', { name: 'Upgrade to Team' })).toBeDisabled();
+
+    subscribe();
+    await card.getByRole('button', { name: 'Check again' }).click();
+    await expect(page.locator('.alert-success').filter({ hasText: 'now on the Team plan' })).toBeVisible();
+    await expect(card.getByRole('button', { name: 'Manage billing' })).toBeVisible();
+});
+
 test('a failed payment and a cancellation are shown', async ({ page }) => {
     subscribe({ status: 'past_due' });
     await page.reload();

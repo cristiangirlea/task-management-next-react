@@ -20,9 +20,13 @@ type Props = {
 const CONFIRM_ATTEMPTS = 8;
 const CONFIRM_INTERVAL_MS = 2000;
 
+// After paying: polling for the webhook, or given up waiting for it. Either
+// way the upgrade button stays off, so nobody pays twice.
+type Confirmation = 'none' | 'confirming' | 'unconfirmed';
+
 export default function BillingCard({ billing, loading, error, refresh, notify }: Props) {
     const [redirecting, setRedirecting] = useState(false);
-    const [confirming, setConfirming] = useState(false);
+    const [confirmation, setConfirmation] = useState<Confirmation>('none');
     const attempts = useRef(0);
 
     // Back from Stripe with ?billing=success|cancel: say so once, then drop it from the URL.
@@ -30,19 +34,20 @@ export default function BillingCard({ billing, loading, error, refresh, notify }
         const result = new URLSearchParams(window.location.search).get('billing');
         if (!result) return;
         window.history.replaceState(null, '', window.location.pathname);
-        if (result === 'success') setConfirming(true);
+        if (result === 'success') setConfirmation('confirming');
         if (result === 'cancel') notify('error', 'Checkout was cancelled. Nothing was charged.');
     }, [notify]);
 
     useEffect(() => {
-        if (!confirming || loading) return;
+        if (confirmation === 'none' || loading) return;
         if (billing?.plan === 'team') {
-            setConfirming(false);
+            setConfirmation('none');
             notify('success', 'Your workspace is now on the Team plan');
             return;
         }
+        if (confirmation === 'unconfirmed') return;
         if (attempts.current >= CONFIRM_ATTEMPTS) {
-            setConfirming(false);
+            setConfirmation('unconfirmed');
             return;
         }
         const timer = window.setTimeout(() => {
@@ -50,7 +55,13 @@ export default function BillingCard({ billing, loading, error, refresh, notify }
             void refresh();
         }, CONFIRM_INTERVAL_MS);
         return () => window.clearTimeout(timer);
-    }, [confirming, loading, billing, refresh, notify]);
+    }, [confirmation, loading, billing, refresh, notify]);
+
+    const checkAgain = () => {
+        attempts.current = 0;
+        setConfirmation('confirming');
+        void refresh();
+    };
 
     const redirect = async (action: () => Promise<RedirectUrl>) => {
         setRedirecting(true);
@@ -72,10 +83,21 @@ export default function BillingCard({ billing, loading, error, refresh, notify }
             ) : (
                 <>
                     <PlanSummary billing={billing} />
-                    {confirming && (
+                    {confirmation === 'confirming' && (
                         <p className="flex items-center gap-2 text-sm" role="status">
                             <span className="loading loading-spinner loading-xs" /> Payment received. Confirming your upgrade…
                         </p>
+                    )}
+                    {confirmation === 'unconfirmed' && (
+                        <div role="alert" className="alert alert-warning py-2 text-sm">
+                            <span>
+                                Stripe has not confirmed your payment yet. Don&apos;t pay again: the plan changes to Team as
+                                soon as the confirmation arrives.
+                            </span>
+                            <button type="button" className="btn btn-sm" onClick={checkAgain}>
+                                Check again
+                            </button>
+                        </div>
                     )}
                     {billing.has_payment_problem && (
                         <div role="alert" className="alert alert-warning py-2 text-sm">
@@ -94,7 +116,7 @@ export default function BillingCard({ billing, loading, error, refresh, notify }
                             <button
                                 type="button"
                                 className="btn btn-primary"
-                                disabled={redirecting || confirming}
+                                disabled={redirecting || confirmation !== 'none'}
                                 onClick={() => void redirect(api.startCheckout)}
                             >
                                 {redirecting ? <span className="loading loading-spinner loading-sm" /> : 'Upgrade to Team'}

@@ -26,3 +26,23 @@ test('resending replaces the link and the old one stops working', async ({ page,
     await visitor.goto(secondLink);
     await expect(visitor.getByRole('button', { name: 'Accept invitation' })).toBeVisible();
 });
+
+test('when the invitation email fails the owner is told and still gets the link', async ({ page }) => {
+    await signIn(page);
+    await page.goto('/settings');
+
+    // The API reports a failed email with email_sent: false (covered by its own tests).
+    await page.route('**/api/tenant/invitations', async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback();
+        const response = await route.fetch();
+        const json = await response.json();
+        json.data.email_sent = false;
+        await route.fulfill({ response, json });
+    });
+
+    await page.getByLabel('Invite by email').fill('lost@example.com');
+    await page.getByRole('button', { name: 'Send invite' }).click();
+
+    await expect(page.locator('.alert-error').filter({ hasText: 'The email to lost@example.com could not be sent' })).toBeVisible();
+    await expect(page.getByLabel('Invitation link')).toContainText('/invite/');
+});
