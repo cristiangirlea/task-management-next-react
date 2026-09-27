@@ -3,6 +3,11 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      api_ref:
+        description: Branch, tag or commit of task-management-app to run the browser tests against
+        default: master
 
 jobs:
   check:
@@ -10,9 +15,9 @@ jobs:
     env:
       NEXT_PUBLIC_API_URL: http://localhost:8000/api
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -33,12 +38,12 @@ jobs:
     name: Build and run the production image
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       - name: Build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           load: true
@@ -54,3 +59,59 @@ jobs:
           curl -sf http://127.0.0.1:3000/login | grep -q '/_next/static/'
           # The image must be built for the relative "/api", not the local-dev default.
           if docker exec web grep -rlq 'localhost:8000' .next/static; then echo "dev API URL compiled into the bundle"; exit 1; fi
+
+  # Browser tests: the production build (NEXT_PUBLIC_API_URL=/api) and the real
+  # Laravel API on one origin, as in production. See e2e/README.md.
+  e2e:
+    name: Browser tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check out the API
+        uses: actions/checkout@v7
+        with:
+          repository: cristiangirlea/task-management-app
+          ref: ${{ inputs.api_ref || 'master' }}
+          path: api
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo, pdo_sqlite, sqlite3, bcmath
+          coverage: none
+
+      - name: Install the API
+        working-directory: api
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for the browser tests
+        run: npm run e2e:build
+
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the browser tests
+        run: npm run e2e
+        env:
+          E2E_API_DIR: api
+
+      - name: Keep the report and API log
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-test-report
+          path: |
+            playwright-report/
+            test-results/
+            api/storage/logs/
+          retention-days: 7

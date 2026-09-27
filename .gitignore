@@ -43,3 +43,10 @@ next-env.d.ts
 
 # IDE
 .idea/
+
+# browser tests (Playwright); CI checks the API out into ./api
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/api/

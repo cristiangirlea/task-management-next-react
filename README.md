@@ -54,8 +54,9 @@ Because the API URL is baked in at build time (`NEXT_PUBLIC_*`), set it before `
 
 `/settings` manages the workspace: owners can rename it, remove members, invite people by email
 (`POST /tenant/invitations`) and revoke pending invitations; members see the same lists read-only.
-An invitation is emailed by the API and also shown as a link you can copy; it points at
-`/invite/[token]`, a public page that previews the invite (`GET /invitations/{token}`) and, once
+An invitation is emailed by the API and its link is shown once, right after sending (the API
+stores only a hash of it); **Resend** on a pending invitation emails a new link, shows it, and
+retires the old one. The link points at `/invite/[token]`, a public page that previews the invite (`GET /invitations/{token}`) and, once
 the invitee picks a name and password, creates their account and signs them in. Settings also
 issues personal API tokens (`/tokens`) for MCP clients: the plain token is shown exactly once,
 together with the `claude mcp add --transport http task-board <API origin>/mcp --header
@@ -93,6 +94,12 @@ trying again") to signed-in viewers when the link was expired or invalid. Signed
 action; the dismissal is kept in `sessionStorage`, so it comes back in a new tab. Both query-string pages
 are client components wrapped in `<Suspense>`, which `useSearchParams` requires for the static build.
 
+## Browser tests
+
+`e2e/` holds Playwright tests that run the production build against the real Laravel API
+on one origin: settings, billing states, seat limits, invitations. `npm run e2e:build`
+then `npm run e2e`; see [e2e/README.md](e2e/README.md). CI runs them on every push.
+
 ## Production image
 
 `Dockerfile` builds the standalone server (Node 22, non-root) on port 3000 with
@@ -107,10 +114,13 @@ CI builds and runs the image on every push; `release.yml` publishes it to
 
 | Script               | What it does                          |
 | -------------------- | ------------------------------------- |
-| `npm run dev`        | Start the dev server on port 3000     |
+| `npm run dev`        | Start the dev server on port 3000 (Turbopack) |
+| `npm run dev:docker` | Dev server for the Docker stack (webpack, which polls bind mounts via `WATCHPACK_POLLING`) |
 | `npm run build`      | Production build (also a self-contained server in `.next/standalone`) |
 | `npm run start`      | Serve the production build            |
-| `npm run lint`       | ESLint (`next lint`)                  |
+| `npm run lint`       | ESLint (`eslint .`)                   |
+| `npm run e2e:build`  | Production build for the browser tests (`NEXT_PUBLIC_API_URL=/api`) |
+| `npm run e2e`        | Browser tests (Playwright; see `e2e/README.md`) |
 | `npx tsc --noEmit`   | Type-check without emitting           |
 
 ## Project layout
