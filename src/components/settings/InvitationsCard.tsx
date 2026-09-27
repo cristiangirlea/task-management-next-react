@@ -27,35 +27,45 @@ export default function InvitationsCard({ isOwner, notify, onChange }: Props) {
     const [email, setEmail] = useState('');
     const [created, setCreated] = useState<Invitation | null>(null);
     const [revokingId, setRevokingId] = useState<number | null>(null);
-    const [resendingId, setResendingId] = useState<number | null>(null);
+    const [resending, setResending] = useState<ReadonlySet<number>>(new Set());
     const { submitting, errors, message, status, run } = useSubmit(workspaceError);
+
+    const reportDelivery = (invitation: Invitation, sent: string) => {
+        if (invitation.email_sent === false) {
+            notify('error', `The email to ${invitation.email} could not be sent. Share the link below instead.`);
+        } else {
+            notify('success', sent);
+        }
+    };
 
     const invite = async (event: FormEvent) => {
         event.preventDefault();
-        const ok = await run(async () => {
+        await run(async () => {
             const invitation = await api.createInvitation({ email: email.trim() });
             setData((prev) => [...prev, invitation]);
             setCreated(invitation);
-        });
-        if (ok) {
             setEmail('');
-            notify('success', 'Invitation sent');
+            reportDelivery(invitation, 'Invitation sent');
             onChange?.();
-        }
+        });
     };
 
     // Links are shown only when issued, so getting one again means sending a new one.
     const resend = async (invitation: Invitation) => {
-        setResendingId(invitation.id);
+        setResending((prev) => new Set(prev).add(invitation.id));
         try {
             const renewed = await api.resendInvitation(invitation.id);
             setData((prev) => prev.map((i) => (i.id === renewed.id ? renewed : i)));
             setCreated(renewed);
-            notify('success', `Sent a new invitation link to ${renewed.email}`);
+            reportDelivery(renewed, `Sent a new invitation link to ${renewed.email}`);
         } catch (err) {
             notify('error', workspaceError(err));
         } finally {
-            setResendingId(null);
+            setResending((prev) => {
+                const next = new Set(prev);
+                next.delete(invitation.id);
+                return next;
+            });
         }
     };
 
@@ -145,10 +155,10 @@ export default function InvitationsCard({ isOwner, notify, onChange }: Props) {
                                         <button
                                             type="button"
                                             className="btn btn-ghost btn-xs"
-                                            disabled={resendingId === invitation.id}
+                                            disabled={resending.has(invitation.id)}
                                             onClick={() => void resend(invitation)}
                                         >
-                                            {resendingId === invitation.id ? <span className="loading loading-spinner loading-xs" /> : 'Resend'}
+                                            {resending.has(invitation.id) ? <span className="loading loading-spinner loading-xs" /> : 'Resend'}
                                         </button>
                                         {isOwner && (
                                             <ConfirmButton

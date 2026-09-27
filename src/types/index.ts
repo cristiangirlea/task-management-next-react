@@ -119,6 +119,8 @@ export type Invitation = {
      * re-sending): the API stores just a hash, so it cannot be read again.
      */
     accept_url?: string;
+    /** Present with a newly issued link: false when the API could not email it. */
+    email_sent?: boolean;
     created_at: string;
 };
 

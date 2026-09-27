@@ -54,8 +54,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (!cancelled) setUser(me);
             })
             .catch(() => {
-                // A 401 already cleared the token; anything else leaves the user signed out too.
-                if (!cancelled) clearSession();
+                // A 401 has already discarded the token. Any other failure (the API
+                // restarting, or this page being left mid-request) keeps it for the
+                // next page load.
+                if (!cancelled) setTokenState(null);
             })
             .finally(() => {
                 if (!cancelled) setLoading(false);
