@@ -199,6 +199,9 @@ export const listInvitations = () => request<Invitation[]>('GET', '/tenant/invit
 export const createInvitation = (input: InvitationInput) =>
     request<Invitation>('POST', '/tenant/invitations', { body: input });
 
+/** Emails a new link (the old one stops working); the response carries it, once. */
+export const resendInvitation = (id: number) => request<Invitation>('POST', `/tenant/invitations/${id}/resend`);
+
 export const revokeInvitation = (id: number) => request<void>('DELETE', `/tenant/invitations/${id}`);
 
 export const getInvitation = (token: string) =>

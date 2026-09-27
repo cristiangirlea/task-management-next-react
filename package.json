@@ -4,9 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:docker": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint .",
+    "e2e:build": "NEXT_PUBLIC_API_URL=/api next build",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@dnd-kit/accessibility": "^3.1.1",
@@ -14,18 +17,18 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "autoprefixer": "^10.4.20",
-    "next": "15.5.26",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "next": "16.3.6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
+    "@playwright/test": "1.63.0",
     "@types/node": "^20",
-    "@types/react": "^19.0.5",
-    "@types/react-dom": "^19.0.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "daisyui": "^4.12.23",
     "eslint": "^9",
-    "eslint-config-next": "15.5.26",
+    "eslint-config-next": "16.3.6",
     "eslint-import-resolver-typescript": "^3.7.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",

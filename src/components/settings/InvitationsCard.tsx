@@ -8,7 +8,7 @@ import type { Notify } from '@/hooks/useToast';
 import * as api from '@/lib/api';
 import { formatDate, workspaceError } from '@/lib/workspace';
 import type { Invitation } from '@/types';
-import { CopyButton, CopyField } from './CopyButton';
+import { CopyField } from './CopyButton';
 import { ConfirmButton, EmptyState, ListSkeleton, LoadError, SettingsCard } from './SettingsCard';
 
 type Props = {
@@ -27,6 +27,7 @@ export default function InvitationsCard({ isOwner, notify, onChange }: Props) {
     const [email, setEmail] = useState('');
     const [created, setCreated] = useState<Invitation | null>(null);
     const [revokingId, setRevokingId] = useState<number | null>(null);
+    const [resendingId, setResendingId] = useState<number | null>(null);
     const { submitting, errors, message, status, run } = useSubmit(workspaceError);
 
     const invite = async (event: FormEvent) => {
@@ -40,6 +41,21 @@ export default function InvitationsCard({ isOwner, notify, onChange }: Props) {
             setEmail('');
             notify('success', 'Invitation sent');
             onChange?.();
+        }
+    };
+
+    // Links are shown only when issued, so getting one again means sending a new one.
+    const resend = async (invitation: Invitation) => {
+        setResendingId(invitation.id);
+        try {
+            const renewed = await api.resendInvitation(invitation.id);
+            setData((prev) => prev.map((i) => (i.id === renewed.id ? renewed : i)));
+            setCreated(renewed);
+            notify('success', `Sent a new invitation link to ${renewed.email}`);
+        } catch (err) {
+            notify('error', workspaceError(err));
+        } finally {
+            setResendingId(null);
         }
     };
 
@@ -86,12 +102,12 @@ export default function InvitationsCard({ isOwner, notify, onChange }: Props) {
                     See plans and upgrade
                 </a>
             )}
-            {created && (
+            {created?.accept_url && (
                 <div className="flex flex-col gap-2 rounded-box border border-success/40 bg-success/10 p-3 text-sm">
                     <div className="flex items-start justify-between gap-2">
                         <p>
                             <strong>{created.email}</strong> has been emailed an invitation. You can also share this link
-                            directly:
+                            directly (it is shown only now; Resend issues a new one):
                         </p>
                         <button type="button" className="btn btn-ghost btn-xs" onClick={() => setCreated(null)} aria-label="Dismiss">
                             ✕
@@ -126,7 +142,14 @@ export default function InvitationsCard({ isOwner, notify, onChange }: Props) {
                                     <td>{invitation.invited_by?.name ?? '—'}</td>
                                     <td className="whitespace-nowrap">{formatDate(invitation.expires_at, true)}</td>
                                     <td className="whitespace-nowrap text-right">
-                                        <CopyButton text={invitation.accept_url} label="Copy link" className="btn btn-ghost btn-xs" />
+                                        <button
+                                            type="button"
+                                            className="btn btn-ghost btn-xs"
+                                            disabled={resendingId === invitation.id}
+                                            onClick={() => void resend(invitation)}
+                                        >
+                                            {resendingId === invitation.id ? <span className="loading loading-spinner loading-xs" /> : 'Resend'}
+                                        </button>
                                         {isOwner && (
                                             <ConfirmButton
                                                 label="Revoke"
