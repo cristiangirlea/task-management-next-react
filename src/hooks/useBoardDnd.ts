@@ -26,7 +26,7 @@ type Options = {
     setTasks: (next: Task[]) => void;
     /** Called after a failed persist, once the board has been refetched. */
     onError: (message: string) => void;
-    refresh: () => Promise<void>;
+    refresh: () => Promise<unknown>;
 };
 
 type DropTarget = { status: TaskStatus; index: number };

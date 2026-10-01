@@ -33,8 +33,6 @@ export default function InvitePage({ token }: { token: string }) {
 
     useEffect(() => {
         let cancelled = false;
-        setPreview(null);
-        setLoadError(null);
         api.getInvitation(token)
             .then((data) => {
                 if (!cancelled) setPreview(data);

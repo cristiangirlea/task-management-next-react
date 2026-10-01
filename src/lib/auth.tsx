@@ -10,6 +10,9 @@ type AuthContextValue = {
     token: string | null;
     /** True until the stored token has been validated (or found missing). */
     loading: boolean;
+    /** The API could not be reached to validate the stored token, which is kept for `retry`. */
+    unreachable: boolean;
+    retry: () => void;
     login: (input: LoginInput) => Promise<void>;
     register: (input: RegisterInput) => Promise<void>;
     /** Accepts a workspace invitation; on success the new account is signed in. */
@@ -24,11 +27,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [token, setTokenState] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [unreachable, setUnreachable] = useState(false);
 
     const clearSession = useCallback(() => {
         api.setToken(null);
         setTokenState(null);
         setUser(null);
+        setUnreachable(false);
     }, []);
 
     // Any authenticated request that gets a 401 ends up here.
@@ -40,37 +45,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return () => api.setUnauthorizedHandler(null);
     }, [clearSession, router]);
 
-    // Validate the stored token once on mount.
-    useEffect(() => {
-        let cancelled = false;
+    const checkSession = useCallback(() => {
         const stored = api.getToken();
-        if (!stored) {
-            setLoading(false);
-            return;
-        }
-        setTokenState(stored);
-        api.getUser()
-            .then((me) => {
-                if (!cancelled) setUser(me);
-            })
-            .catch(() => {
+        return (stored ? api.getUser() : Promise.resolve(null)).then(
+            (me) => {
+                setUser(me);
+                setTokenState(me ? stored : null);
+                setUnreachable(false);
+                setLoading(false);
+            },
+            (error: unknown) => {
                 // A 401 has already discarded the token. Any other failure (the API
-                // restarting, or this page being left mid-request) keeps it for the
-                // next page load.
-                if (!cancelled) setTokenState(null);
-            })
-            .finally(() => {
-                if (!cancelled) setLoading(false);
-            });
-        return () => {
-            cancelled = true;
-        };
-    }, [clearSession]);
+                // restarting, or this page being left mid-request) keeps it.
+                setUnreachable(!(error instanceof api.ApiError && error.status === 401));
+                setLoading(false);
+            },
+        );
+    }, []);
+
+    useEffect(() => {
+        void checkSession();
+    }, [checkSession]);
+
+    const retry = useCallback(() => {
+        setLoading(true);
+        setUnreachable(false);
+        void checkSession();
+    }, [checkSession]);
 
     const startSession = useCallback((payload: { user: User; token: string }) => {
         api.setToken(payload.token);
         setTokenState(payload.token);
         setUser(payload.user);
+        setUnreachable(false);
     }, []);
 
     const login = useCallback(
@@ -99,8 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, [clearSession, router]);
 
     const value = useMemo(
-        () => ({ user, token, loading, login, register, acceptInvitation, logout }),
-        [user, token, loading, login, register, acceptInvitation, logout],
+        () => ({ user, token, loading, unreachable, retry, login, register, acceptInvitation, logout }),
+        [user, token, loading, unreachable, retry, login, register, acceptInvitation, logout],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

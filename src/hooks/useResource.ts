@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { errorMessage } from '@/lib/api';
 
 /**
@@ -12,22 +12,39 @@ export function useResource<T>(load: () => Promise<T>, initial: T) {
     const [data, setData] = useState<T>(initial);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    // Only the latest request may update the state; an older one finishing late is ignored.
+    const latest = useRef(0);
 
-    const refresh = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            setData(await load());
-        } catch (err) {
-            setError(errorMessage(err));
-        } finally {
-            setLoading(false);
-        }
+    const fetchData = useCallback((): Promise<T | undefined> => {
+        const id = ++latest.current;
+        return load().then(
+            (result) => {
+                if (id === latest.current) {
+                    setData(result);
+                    setLoading(false);
+                }
+                return result;
+            },
+            (err: unknown) => {
+                if (id === latest.current) {
+                    setError(errorMessage(err));
+                    setLoading(false);
+                }
+                return undefined;
+            },
+        );
     }, [load]);
 
+    /** Loads again; resolves to what this request returned, or undefined if it failed. */
+    const refresh = useCallback(() => {
+        setLoading(true);
+        setError(null);
+        return fetchData();
+    }, [fetchData]);
+
     useEffect(() => {
-        void refresh();
-    }, [refresh]);
+        void fetchData();
+    }, [fetchData]);
 
     return { data, setData, loading, error, refresh };
 }
