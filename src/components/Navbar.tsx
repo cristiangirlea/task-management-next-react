@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 
 export default function Navbar() {
-    const { user, loading, logout } = useAuth();
+    const { user, loading, unreachable, logout } = useAuth();
     const pathname = usePathname();
     const settingsActive = pathname === '/settings';
 
@@ -17,7 +17,7 @@ export default function Navbar() {
                 </Link>
             </div>
             <nav className="flex items-center gap-2">
-                {loading ? null : user ? (
+                {loading || unreachable ? null : user ? (
                     <>
                         <Link
                             href="/settings"

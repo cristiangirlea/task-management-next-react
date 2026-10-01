@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Notify } from '@/hooks/useToast';
 import * as api from '@/lib/api';
 import { formatDate, formatPrice, workspaceError } from '@/lib/workspace';
@@ -11,7 +11,8 @@ type Props = {
     billing: Billing | null;
     loading: boolean;
     error: string | null;
-    refresh: () => Promise<void>;
+    /** Reloads the billing state; resolves to it, or undefined if loading failed. */
+    refresh: () => Promise<Billing | null | undefined>;
     notify: Notify;
 };
 
@@ -24,44 +25,51 @@ const CONFIRM_INTERVAL_MS = 2000;
 // way the upgrade button stays off, so nobody pays twice.
 type Confirmation = 'none' | 'confirming' | 'unconfirmed';
 
+/** `success` or `cancel` when the browser has just come back from Stripe Checkout. */
+function checkoutResult(): string | null {
+    return new URLSearchParams(window.location.search).get('billing');
+}
+
 export default function BillingCard({ billing, loading, error, refresh, notify }: Props) {
     const [redirecting, setRedirecting] = useState(false);
-    const [confirmation, setConfirmation] = useState<Confirmation>('none');
-    const attempts = useRef(0);
+    // This card renders only for a signed-in user, so only in the browser.
+    const [confirmation, setConfirmation] = useState<Confirmation>(() =>
+        checkoutResult() === 'success' ? 'confirming' : 'none',
+    );
 
-    // Back from Stripe with ?billing=success|cancel: say so once, then drop it from the URL.
+    // Say so once when Checkout was cancelled, and drop the result from the URL.
     useEffect(() => {
-        const result = new URLSearchParams(window.location.search).get('billing');
+        const result = checkoutResult();
         if (!result) return;
         window.history.replaceState(null, '', window.location.pathname);
-        if (result === 'success') setConfirmation('confirming');
         if (result === 'cancel') notify('error', 'Checkout was cancelled. Nothing was charged.');
     }, [notify]);
 
     useEffect(() => {
-        if (confirmation === 'none' || loading) return;
-        if (billing?.plan === 'team') {
-            setConfirmation('none');
-            notify('success', 'Your workspace is now on the Team plan');
-            return;
-        }
-        if (confirmation === 'unconfirmed') return;
-        if (attempts.current >= CONFIRM_ATTEMPTS) {
-            setConfirmation('unconfirmed');
-            return;
-        }
-        const timer = window.setTimeout(() => {
-            attempts.current += 1;
-            void refresh();
-        }, CONFIRM_INTERVAL_MS);
-        return () => window.clearTimeout(timer);
-    }, [confirmation, loading, billing, refresh, notify]);
+        if (confirmation !== 'confirming') return;
+        let stopped = false;
+        let timer: number | undefined;
+        const check = (attempt: number) => {
+            void refresh().then((latest) => {
+                if (stopped) return;
+                if (latest?.plan === 'team') {
+                    setConfirmation('none');
+                    notify('success', 'Your workspace is now on the Team plan');
+                } else if (attempt >= CONFIRM_ATTEMPTS) {
+                    setConfirmation('unconfirmed');
+                } else {
+                    timer = window.setTimeout(() => check(attempt + 1), CONFIRM_INTERVAL_MS);
+                }
+            });
+        };
+        check(0);
+        return () => {
+            stopped = true;
+            window.clearTimeout(timer);
+        };
+    }, [confirmation, refresh, notify]);
 
-    const checkAgain = () => {
-        attempts.current = 0;
-        setConfirmation('confirming');
-        void refresh();
-    };
+    const checkAgain = () => setConfirmation('confirming');
 
     const redirect = async (action: () => Promise<RedirectUrl>) => {
         setRedirecting(true);

@@ -1,57 +1,40 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
 import * as api from '@/lib/api';
-import { errorMessage } from '@/lib/api';
 import type { CreateTaskInput, Task, UpdateTaskInput } from '@/types';
+import { useResource } from './useResource';
 
-export function useTasks(projectId: number | null) {
-    const [tasks, setTasks] = useState<Task[]>([]);
-    // A fetch starts on mount whenever there is a project, so begin in the loading state.
-    const [loading, setLoading] = useState(projectId !== null);
-    const [error, setError] = useState<string | null>(null);
-    // Ignore responses from requests that were superseded by a newer one.
-    const requestId = useRef(0);
+/** One project's tasks. The board is keyed by project, so a new project means a fresh hook. */
+export function useTasks(projectId: number) {
+    const load = useCallback(() => api.listTasks(projectId), [projectId]);
+    const { data: tasks, setData: setTasks, loading, error, refresh } = useResource<Task[]>(load, []);
 
-    const refresh = useCallback(async () => {
-        const id = ++requestId.current;
-        if (projectId === null) {
-            setTasks([]);
-            setLoading(false);
-            return;
-        }
-        setLoading(true);
-        setError(null);
-        try {
-            const data = await api.listTasks(projectId);
-            if (id === requestId.current) setTasks(data);
-        } catch (err) {
-            if (id === requestId.current) setError(errorMessage(err));
-        } finally {
-            if (id === requestId.current) setLoading(false);
-        }
-    }, [projectId]);
+    const create = useCallback(
+        async (input: CreateTaskInput) => {
+            const task = await api.createTask(input);
+            setTasks((prev) => [...prev, task]);
+            return task;
+        },
+        [setTasks],
+    );
 
-    useEffect(() => {
-        void refresh();
-    }, [refresh]);
+    const update = useCallback(
+        async (id: number, input: UpdateTaskInput) => {
+            const task = await api.updateTask(id, input);
+            setTasks((prev) => prev.map((t) => (t.id === id ? task : t)));
+            return task;
+        },
+        [setTasks],
+    );
 
-    const create = useCallback(async (input: CreateTaskInput) => {
-        const task = await api.createTask(input);
-        setTasks((prev) => [...prev, task]);
-        return task;
-    }, []);
-
-    const update = useCallback(async (id: number, input: UpdateTaskInput) => {
-        const task = await api.updateTask(id, input);
-        setTasks((prev) => prev.map((t) => (t.id === id ? task : t)));
-        return task;
-    }, []);
-
-    const remove = useCallback(async (id: number) => {
-        await api.deleteTask(id);
-        setTasks((prev) => prev.filter((t) => t.id !== id));
-    }, []);
+    const remove = useCallback(
+        async (id: number) => {
+            await api.deleteTask(id);
+            setTasks((prev) => prev.filter((t) => t.id !== id));
+        },
+        [setTasks],
+    );
 
     return { tasks, setTasks, loading, error, refresh, create, update, remove };
 }

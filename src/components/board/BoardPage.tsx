@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Toast from '@/components/Toast';
 import VerifyEmailBanner from '@/components/VerifyEmailBanner';
 import { useProjects } from '@/hooks/useProjects';
@@ -12,23 +12,19 @@ import ProjectSelector from './ProjectSelector';
 
 export default function BoardPage() {
     const { projects, loading, error, refresh, create } = useProjects();
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [pickedId, setPickedId] = useState<number | null>(null);
     const { toast, show, dismiss } = useToast();
 
-    // Once projects are known: keep the current pick if it still exists,
-    // otherwise use the remembered project, otherwise the first one.
-    useEffect(() => {
-        if (loading) return;
-        setSelectedId((current) => {
-            if (current !== null && projects.some((p) => p.id === current)) return current;
-            const remembered = Number(readStorage(PROJECT_KEY));
-            const match = projects.find((p) => p.id === remembered) ?? projects[0];
-            return match ? match.id : null;
-        });
-    }, [projects, loading]);
+    // The project picked here while it still exists, otherwise the remembered
+    // project, otherwise the first one.
+    const selectedId = useMemo(() => {
+        if (projects.some((p) => p.id === pickedId)) return pickedId;
+        const remembered = Number(readStorage(PROJECT_KEY));
+        return (projects.find((p) => p.id === remembered) ?? projects[0])?.id ?? null;
+    }, [projects, pickedId]);
 
     const selectProject = useCallback((id: number) => {
-        setSelectedId(id);
+        setPickedId(id);
         writeStorage(PROJECT_KEY, String(id));
     }, []);
 
