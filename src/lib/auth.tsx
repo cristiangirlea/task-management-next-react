@@ -2,7 +2,14 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { AcceptInvitationInput, LoginInput, RegisterInput, User } from '@/types';
+import type {
+    AcceptInvitationInput,
+    LoginInput,
+    RegisterInput,
+    TwoFactorAnswer,
+    TwoFactorChallenge,
+    User,
+} from '@/types';
 import * as api from './api';
 
 type AuthContextValue = {
@@ -13,7 +20,11 @@ type AuthContextValue = {
     /** The API could not be reached to validate the stored token, which is kept for `retry`. */
     unreachable: boolean;
     retry: () => void;
-    login: (input: LoginInput) => Promise<void>;
+    /** Signs in, or returns the challenge for the second step when two-factor authentication is on. */
+    login: (input: LoginInput) => Promise<TwoFactorChallenge | null>;
+    completeTwoFactor: (challenge: string, answer: TwoFactorAnswer) => Promise<void>;
+    /** Replaces the signed-in user after a change made elsewhere, such as two-factor settings. */
+    updateUser: (user: User) => void;
     register: (input: RegisterInput) => Promise<void>;
     /** Accepts a workspace invitation; on success the new account is signed in. */
     acceptInvitation: (token: string, input: AcceptInvitationInput) => Promise<void>;
@@ -81,7 +92,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const login = useCallback(
-        async (input: LoginInput) => startSession(await api.login(input)),
+        async (input: LoginInput) => {
+            const result = await api.login(input);
+            if ('two_factor' in result) return result;
+            startSession(result);
+            return null;
+        },
+        [startSession],
+    );
+
+    const completeTwoFactor = useCallback(
+        async (challenge: string, answer: TwoFactorAnswer) => startSession(await api.loginTwoFactor(challenge, answer)),
         [startSession],
     );
 
@@ -106,8 +127,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, [clearSession, router]);
 
     const value = useMemo(
-        () => ({ user, token, loading, unreachable, retry, login, register, acceptInvitation, logout }),
-        [user, token, loading, unreachable, retry, login, register, acceptInvitation, logout],
+        () => ({
+            user,
+            token,
+            loading,
+            unreachable,
+            retry,
+            login,
+            completeTwoFactor,
+            updateUser: setUser,
+            register,
+            acceptInvitation,
+            logout,
+        }),
+        [user, token, loading, unreachable, retry, login, completeTwoFactor, register, acceptInvitation, logout],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

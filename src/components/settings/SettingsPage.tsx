@@ -10,6 +10,7 @@ import ApiTokensCard from './ApiTokensCard';
 import BillingCard from './BillingCard';
 import InvitationsCard from './InvitationsCard';
 import MembersCard from './MembersCard';
+import TwoFactorCard from './TwoFactorCard';
 import WorkspaceCard from './WorkspaceCard';
 
 export default function SettingsPage() {
@@ -40,6 +41,7 @@ export default function SettingsPage() {
             />
             <MembersCard user={user} notify={show} seatLimit={billing.data?.seats.limit} onChange={billing.refresh} />
             <InvitationsCard isOwner={isOwner} notify={show} onChange={billing.refresh} />
+            <TwoFactorCard user={user} notify={show} />
             <ApiTokensCard notify={show} />
             <Toast toast={toast} onDismiss={dismiss} />
         </div>
