@@ -98,7 +98,10 @@ are client components wrapped in `<Suspense>`, which `useSearchParams` requires 
 
 `e2e/` holds Playwright tests that run the production build against the real Laravel API
 on one origin: settings, billing states, seat limits, invitations. `npm run e2e:build`
-then `npm run e2e`; see [e2e/README.md](e2e/README.md). CI runs them on every push.
+then `npm run e2e`; see [e2e/README.md](e2e/README.md). CI runs them on every pull request and
+merge to `master`. Every workflow runs on our own self-hosted runners (the `infra` repo's scale set, named by
+the `CI_RUNNER` repository variable), never on GitHub's: while the variable is unset, the jobs
+are skipped, and pull requests from forks are skipped always.
 
 ## Production image
 
@@ -107,7 +110,7 @@ then `npm run e2e`; see [e2e/README.md](e2e/README.md). CI runs them on every pu
 Laravel on the same origin (see the production stack in
 [task-management-docker](https://github.com/cristiangirlea/task-management-docker)). Pass
 `--build-arg NEXT_PUBLIC_API_URL=https://api.example.com/api` to target a separate API host.
-CI builds and runs the image on every push; `release.yml` publishes it to
+CI builds and runs the image on every pull request and merge; `release.yml` publishes it to
 `ghcr.io/cristiangirlea/task-management-web` from `master` and `v*` tags.
 
 ## Scripts

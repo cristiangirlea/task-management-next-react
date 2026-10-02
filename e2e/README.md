@@ -35,6 +35,6 @@ npm run e2e
 Ports 3100, 3200 and 8000 must be free. The API's log is `storage/logs/laravel.log` in
 the API checkout.
 
-CI runs them on every push against the API's `master` (the `e2e` job in
+CI runs them on every pull request and merge to `master` against the API's `master` (the `e2e` job in
 `.github/workflows/ci.yml`; run the workflow by hand to pick another API ref), and keeps
 the report and the API log when they fail.
