@@ -147,6 +147,18 @@ test('a page that asked for a sign-in is where signing in leads', async ({ page 
     await page.getByRole('button', { name: 'Sign in' }).click();
     await page.waitForURL('/settings');
 
+    // Signing up instead comes back too.
+    await page.getByRole('button', { name: 'Logout' }).click();
+    await page.goto('/login?next=%2Fsettings');
+    await page.getByRole('link', { name: 'Create one' }).click();
+    await page.waitForURL('/register?next=%2Fsettings');
+    await page.getByLabel('Name', { exact: true }).fill('New Person');
+    await page.getByLabel('Email').fill('new.person@example.com');
+    await page.getByLabel('Password', { exact: true }).fill('secret-password');
+    await page.getByLabel('Confirm password').fill('secret-password');
+    await page.getByRole('button', { name: 'Create account' }).click();
+    await page.waitForURL('/settings');
+
     // Never off the site, whatever `next` says.
     await page.getByRole('button', { name: 'Logout' }).click();
     await page.goto('/login?next=//evil.example/path');

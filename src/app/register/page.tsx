@@ -22,6 +22,7 @@ export default function RegisterPage() {
     }, [loading, user, router]);
 
     const signInInstead = (event: MouseEvent) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
         event.preventDefault();
         router.push(withNext('/login'));
     };

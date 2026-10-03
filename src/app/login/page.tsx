@@ -64,6 +64,7 @@ export default function LoginPage() {
 
     // Signing up instead still comes back to the page that asked for a sign-in.
     const keepNext = (path: string) => (event: MouseEvent) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
         event.preventDefault();
         router.push(withNext(path));
     };
