@@ -1,7 +1,11 @@
 name: CI
 
+# Runs only on our own runners (the infra repo's lab-<repo> scale set, named by the CI_RUNNER
+# variable), never on GitHub's: every job is skipped while CI_RUNNER is unset, and for a pull
+# request from a fork, whose code must not reach those runners.
 on:
   push:
+    branches: [master]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -9,9 +13,15 @@ on:
         description: Branch, tag or commit of task-management-app to run the browser tests against
         default: master
 
+# A newer push to a pull request replaces its queued or running check.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check:
-    runs-on: ubuntu-latest
+    if: vars.CI_RUNNER != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ${{ vars.CI_RUNNER }}
     env:
       NEXT_PUBLIC_API_URL: http://localhost:8000/api
     steps:
@@ -36,7 +46,8 @@ jobs:
 
   image:
     name: Build and run the production image
-    runs-on: ubuntu-latest
+    if: vars.CI_RUNNER != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ${{ vars.CI_RUNNER }}
     steps:
       - uses: actions/checkout@v7
 
@@ -64,7 +75,8 @@ jobs:
   # Laravel API on one origin, as in production. See e2e/README.md.
   e2e:
     name: Browser tests
-    runs-on: ubuntu-latest
+    if: vars.CI_RUNNER != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ${{ vars.CI_RUNNER }}
     steps:
       - uses: actions/checkout@v7
 
@@ -81,6 +93,8 @@ jobs:
           php-version: '8.4'
           extensions: mbstring, pdo, pdo_sqlite, sqlite3, bcmath
           coverage: none
+        env:
+          runner: self-hosted
 
       - name: Install the API
         working-directory: api

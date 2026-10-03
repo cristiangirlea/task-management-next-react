@@ -27,7 +27,10 @@ export const API_ENV: Record<string, string> = {
     CORS_ALLOWED_ORIGINS: ORIGIN,
     DB_CONNECTION: 'sqlite',
     DB_DATABASE: DB_FILE,
-    CACHE_STORE: 'array',
+    // Files, because PHP's built-in server forgets an array cache after every request and a
+    // two-factor sign-in keeps its challenge in the cache. Rate limits stay per request.
+    CACHE_STORE: 'file',
+    CACHE_LIMITER_STORE: 'array',
     SESSION_DRIVER: 'array',
     QUEUE_CONNECTION: 'sync',
     MAIL_MAILER: 'log',

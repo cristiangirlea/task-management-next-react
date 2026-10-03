@@ -44,6 +44,8 @@ export type User = {
     role: Role;
     /** Null until the address behind the verification email has been confirmed. */
     email_verified_at: string | null;
+    /** Signing in also asks for a code from an authenticator app. */
+    two_factor_enabled: boolean;
     tenant?: Tenant;
     created_at: string;
     updated_at: string;
@@ -78,6 +80,18 @@ export type Task = {
 };
 
 export type AuthPayload = { user: User; token: string };
+
+/** What POST /login returns instead of a token when two-factor authentication is on. */
+export type TwoFactorChallenge = { two_factor: true; challenge: string };
+
+/** The second sign-in step: a code from the app, or one of the recovery codes. */
+export type TwoFactorAnswer = { code: string } | { recovery_code: string };
+
+/** A secret not yet in force: shown as a QR code (a data URI) and as text for typing in. */
+export type TwoFactorSetup = { secret: string; otpauth_url: string; qr_code: string };
+
+/** Shown once; each works once. */
+export type RecoveryCodes = { recovery_codes: string[] };
 
 export type RegisterInput = {
     name: string;

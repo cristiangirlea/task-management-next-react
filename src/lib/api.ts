@@ -15,12 +15,16 @@ import type {
     Project,
     ProjectInput,
     RedirectUrl,
+    RecoveryCodes,
     RegisterInput,
     ResetPasswordInput,
     Task,
     TaskStatus,
     Tenant,
     TenantInput,
+    TwoFactorAnswer,
+    TwoFactorChallenge,
+    TwoFactorSetup,
     UpdateTaskInput,
     User,
     ValidationErrors,
@@ -136,7 +140,10 @@ export const register = (input: RegisterInput) =>
     request<AuthPayload>('POST', '/register', { body: input, auth: false });
 
 export const login = (input: LoginInput) =>
-    request<AuthPayload>('POST', '/login', { body: input, auth: false });
+    request<AuthPayload | TwoFactorChallenge>('POST', '/login', { body: input, auth: false });
+
+export const loginTwoFactor = (challenge: string, answer: TwoFactorAnswer) =>
+    request<AuthPayload>('POST', '/login/two-factor', { body: { challenge, ...answer }, auth: false });
 
 export const logout = () => request<unknown>('POST', '/logout');
 
@@ -153,6 +160,19 @@ export const resetPassword = (input: ResetPasswordInput) =>
 
 /** Sends the verification email again; the endpoint is throttled and answers 429 when called too often. */
 export const resendVerificationEmail = () => request<void>('POST', '/email/verification-notification');
+
+// Two-factor authentication (each step but confirming asks for the password again)
+export const startTwoFactor = (password: string) =>
+    request<TwoFactorSetup>('POST', '/user/two-factor', { body: { password } });
+
+export const confirmTwoFactor = (code: string) =>
+    request<RecoveryCodes & { user: User }>('POST', '/user/two-factor/confirm', { body: { code } });
+
+export const disableTwoFactor = (password: string) =>
+    request<User>('DELETE', '/user/two-factor', { body: { password } });
+
+export const regenerateRecoveryCodes = (password: string) =>
+    request<RecoveryCodes>('POST', '/user/two-factor/recovery-codes', { body: { password } });
 
 // Projects
 export const listProjects = () => request<Project[]>('GET', '/projects');
