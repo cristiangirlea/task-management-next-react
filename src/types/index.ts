@@ -35,6 +35,29 @@ export type Billing = {
 /** A Stripe-hosted page to send the browser to. */
 export type RedirectUrl = { url: string };
 
+/** An MCP client asking to use Task Board as the signed-in person (OAuth consent). */
+export type OAuthAuthorization = {
+    client: {
+        id: string;
+        /** Chosen by whoever registered the client, so shown together with `redirect_host`. */
+        name: string;
+        /** Where the browser goes back to after the answer. */
+        redirect_host: string | null;
+    };
+    scopes: { id: string; description: string }[];
+};
+
+/** Where to send the browser after allowing or denying: back to the client. */
+export type OAuthAnswer = { redirect_url: string | null };
+
+/** An MCP client someone allowed in, which can still use its tokens. */
+export type OAuthConnection = {
+    id: string;
+    name: string;
+    redirect_host: string | null;
+    connected_at: string | null;
+};
+
 export type Role = 'owner' | 'member';
 
 export type User = {

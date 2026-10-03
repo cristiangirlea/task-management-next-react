@@ -12,6 +12,9 @@ import type {
     InvitationPreview,
     LoginInput,
     Member,
+    OAuthAnswer,
+    OAuthAuthorization,
+    OAuthConnection,
     Project,
     ProjectInput,
     RedirectUrl,
@@ -246,3 +249,18 @@ export const createToken = (input: ApiTokenInput) =>
     request<CreatedApiToken>('POST', '/tokens', { body: input });
 
 export const revokeToken = (id: number) => request<void>('DELETE', `/tokens/${id}`);
+
+// OAuth for MCP clients: the consent screen and the apps allowed in
+export const getOAuthAuthorization = (id: string) =>
+    request<OAuthAuthorization>('GET', `/oauth/authorizations/${encodeURIComponent(id)}`);
+
+export const approveOAuthAuthorization = (id: string) =>
+    request<OAuthAnswer>('POST', `/oauth/authorizations/${encodeURIComponent(id)}/approve`);
+
+export const denyOAuthAuthorization = (id: string) =>
+    request<OAuthAnswer>('POST', `/oauth/authorizations/${encodeURIComponent(id)}/deny`);
+
+export const listOAuthConnections = () => request<OAuthConnection[]>('GET', '/oauth/connections');
+
+export const disconnectOAuthConnection = (clientId: string) =>
+    request<void>('DELETE', `/oauth/connections/${encodeURIComponent(clientId)}`);

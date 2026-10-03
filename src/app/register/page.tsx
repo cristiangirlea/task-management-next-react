@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type MouseEvent } from 'react';
 import AuthCard from '@/components/auth/AuthCard';
 import { FormAlert, TextField } from '@/components/forms/Fields';
 import { useSubmit } from '@/hooks/useSubmit';
 import { useAuth } from '@/lib/auth';
+import { nextPath, withNext } from '@/lib/redirect';
 
 const EMPTY = { name: '', email: '', password: '', password_confirmation: '', workspace_name: '' };
 
@@ -17,8 +18,14 @@ export default function RegisterPage() {
     const { submitting, errors, message, run } = useSubmit();
 
     useEffect(() => {
-        if (!loading && user) router.replace('/');
+        if (!loading && user) router.replace(nextPath());
     }, [loading, user, router]);
+
+    const signInInstead = (event: MouseEvent) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+        event.preventDefault();
+        router.push(withNext('/login'));
+    };
 
     const field = (key: keyof typeof EMPTY) => ({
         name: key,
@@ -39,7 +46,7 @@ export default function RegisterPage() {
             footer={
                 <>
                     Already registered?{' '}
-                    <Link href="/login" className="link link-primary">
+                    <Link href="/login" className="link link-primary" onClick={signInInstead}>
                         Sign in
                     </Link>
                 </>

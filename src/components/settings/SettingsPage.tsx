@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import type { Billing } from '@/types';
 import ApiTokensCard from './ApiTokensCard';
 import BillingCard from './BillingCard';
+import ConnectedAppsCard from './ConnectedAppsCard';
 import InvitationsCard from './InvitationsCard';
 import MembersCard from './MembersCard';
 import TwoFactorCard from './TwoFactorCard';
@@ -42,6 +43,7 @@ export default function SettingsPage() {
             <MembersCard user={user} notify={show} seatLimit={billing.data?.seats.limit} onChange={billing.refresh} />
             <InvitationsCard isOwner={isOwner} notify={show} onChange={billing.refresh} />
             <TwoFactorCard user={user} notify={show} />
+            <ConnectedAppsCard notify={show} />
             <ApiTokensCard notify={show} />
             <Toast toast={toast} onDismiss={dismiss} />
         </div>

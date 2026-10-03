@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type MouseEvent } from 'react';
 import AuthCard from '@/components/auth/AuthCard';
 import { FormAlert, TextField } from '@/components/forms/Fields';
 import { useSubmit } from '@/hooks/useSubmit';
 import { ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { nextPath, withNext } from '@/lib/redirect';
 
 export default function LoginPage() {
     const { login, completeTwoFactor, user, loading } = useAuth();
@@ -22,9 +23,9 @@ export default function LoginPage() {
     const [restartReason, setRestartReason] = useState<string | null>(null);
     const { submitting, errors, message, run, reset } = useSubmit();
 
-    // Already signed in (or just signed in): go to the board.
+    // Already signed in (or just signed in): back to where they came from.
     useEffect(() => {
-        if (!loading && user) router.replace('/');
+        if (!loading && user) router.replace(nextPath());
     }, [loading, user, router]);
 
     const signIn = (event: FormEvent) => {
@@ -59,6 +60,13 @@ export default function LoginPage() {
             }
         });
         if (expired) restart(expired);
+    };
+
+    // Signing up instead still comes back to the page that asked for a sign-in.
+    const keepNext = (path: string) => (event: MouseEvent) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+        event.preventDefault();
+        router.push(withNext(path));
     };
 
     const toggleRecovery = () => {
@@ -131,7 +139,7 @@ export default function LoginPage() {
             footer={
                 <>
                     No account yet?{' '}
-                    <Link href="/register" className="link link-primary">
+                    <Link href="/register" className="link link-primary" onClick={keepNext('/register')}>
                         Create one
                     </Link>
                 </>

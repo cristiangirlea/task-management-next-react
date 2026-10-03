@@ -1,9 +1,10 @@
-// Stands in for Caddy in production: /api, /mcp and /up go to Laravel,
-// everything else to the Next.js server, all on one origin.
+// Stands in for Caddy in production: /api, /mcp, /up and OAuth's /oauth and
+// /.well-known go to Laravel, everything else to the Next.js server, all on
+// one origin.
 import http from 'node:http';
 
 const [port, apiPort, webPort] = process.argv.slice(2).map(Number);
-const toApi = /^\/(api|mcp|up)(\/|\?|$)/;
+const toApi = /^\/(api|mcp|up|oauth|\.well-known)(\/|\?|$)/;
 
 http.createServer((req, res) => {
     const upstream = http.request(

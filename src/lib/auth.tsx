@@ -11,6 +11,7 @@ import type {
     User,
 } from '@/types';
 import * as api from './api';
+import { signInPath } from './redirect';
 
 type AuthContextValue = {
     user: User | null;
@@ -28,7 +29,10 @@ type AuthContextValue = {
     register: (input: RegisterInput) => Promise<void>;
     /** Accepts a workspace invitation; on success the new account is signed in. */
     acceptInvitation: (token: string, input: AcceptInvitationInput) => Promise<void>;
-    logout: () => Promise<void>;
+    /** Signs out, then goes to `to` (the sign-in page by default). */
+    logout: (to?: string) => Promise<void>;
+    /** Where the last sign-out went, so protected pages follow it rather than add their own way back. */
+    signedOutTo: string | null;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -39,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [token, setTokenState] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [unreachable, setUnreachable] = useState(false);
+    const [signedOutTo, setSignedOutTo] = useState<string | null>(null);
 
     const clearSession = useCallback(() => {
         api.setToken(null);
@@ -47,11 +52,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUnreachable(false);
     }, []);
 
-    // Any authenticated request that gets a 401 ends up here.
+    // Any authenticated request that gets a 401 ends up here; signing in again comes back.
     useEffect(() => {
         api.setUnauthorizedHandler(() => {
             clearSession();
-            router.replace('/login');
+            router.replace(signInPath());
         });
         return () => api.setUnauthorizedHandler(null);
     }, [clearSession, router]);
@@ -89,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTokenState(payload.token);
         setUser(payload.user);
         setUnreachable(false);
+        setSignedOutTo(null);
     }, []);
 
     const login = useCallback(
@@ -116,15 +122,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         [startSession],
     );
 
-    const logout = useCallback(async () => {
-        try {
-            await api.logout();
-        } catch {
-            // The token is discarded locally regardless of what the server says.
-        }
-        clearSession();
-        router.replace('/login');
-    }, [clearSession, router]);
+    const logout = useCallback(
+        async (to = '/login') => {
+            try {
+                await api.logout();
+            } catch {
+                // The token is discarded locally regardless of what the server says.
+            }
+            setSignedOutTo(to);
+            clearSession();
+            router.replace(to);
+        },
+        [clearSession, router],
+    );
 
     const value = useMemo(
         () => ({
@@ -139,8 +149,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             register,
             acceptInvitation,
             logout,
+            signedOutTo,
         }),
-        [user, token, loading, unreachable, retry, login, completeTwoFactor, register, acceptInvitation, logout],
+        [user, token, loading, unreachable, retry, login, completeTwoFactor, register, acceptInvitation, logout, signedOutTo],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
