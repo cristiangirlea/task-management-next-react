@@ -18,8 +18,8 @@ Copy `.env.example` to `.env.local` and adjust as needed:
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000/api` | Base URL of the Laravel API (no trailing slash) |
 
 `NEXT_PUBLIC_API_URL` is baked in at build time. It may be relative: the production image is built
-with `/api`, which means "the API on this page's own origin" (the front proxy routes `/api` and
-`/mcp` to Laravel), so one image works on any domain.
+with `/api`, which means "the API on this page's own origin" (the front proxy routes `/api`,
+`/mcp`, `/oauth` and `/.well-known` to Laravel), so one image works on any domain.
 
 ## Getting started
 
@@ -57,11 +57,25 @@ Because the API URL is baked in at build time (`NEXT_PUBLIC_*`), set it before `
 An invitation is emailed by the API and its link is shown once, right after sending (the API
 stores only a hash of it); **Resend** on a pending invitation emails a new link, shows it, and
 retires the old one. The link points at `/invite/[token]`, a public page that previews the invite (`GET /invitations/{token}`) and, once
-the invitee picks a name and password, creates their account and signs them in. Settings also
-issues personal API tokens (`/tokens`) for MCP clients: the plain token is shown exactly once,
-together with the `claude mcp add --transport http task-board <API origin>/mcp --header
-"Authorization: Bearer <token>"` command that connects Claude Code to the API's `/mcp` endpoint.
+the invitee picks a name and password, creates their account and signs them in.
 A `403` from any owner-only action is shown as "Only workspace owners can do this."
+
+## Connecting AI assistants (MCP)
+
+MCP clients (Claude, Cursor, VS Code, Claude Code) connect to the API's `/mcp` endpoint through
+OAuth. Settings' **Connected apps** card shows the address to add and lists the apps allowed in,
+each with the host it returns to and a **Disconnect** button (`/oauth/connections`).
+
+When a client sends someone to the API's `/oauth/authorize`, the API checks the request and
+redirects to `/authorize?request=<id>`. That page signs them in if needed (sign-in pages honour
+`?next=`, on this site only) and shows the app's name, the host it returns to, the account and the
+workspace. **Allow** or **Deny** posts the answer and the browser goes back to the client.
+**Use a different account** signs out and returns to the same request. No page may be framed by
+another site (`frame-ancestors 'none'`), so the consent page cannot be clickjacked.
+
+For clients that only take a fixed header, Settings also issues personal API tokens (`/tokens`):
+the plain token is shown exactly once, together with the `claude mcp add --transport http
+task-board <API origin>/mcp --header "Authorization: Bearer <token>"` command.
 
 ## Plan and billing
 
@@ -106,8 +120,8 @@ are skipped, and pull requests from forks are skipped always.
 ## Production image
 
 `Dockerfile` builds the standalone server (Node 22, non-root) on port 3000 with
-`NEXT_PUBLIC_API_URL=/api` baked in, for use behind a proxy that routes `/api` and `/mcp` to
-Laravel on the same origin (see the production stack in
+`NEXT_PUBLIC_API_URL=/api` baked in, for use behind a proxy that routes `/api`, `/mcp`,
+`/oauth` and `/.well-known` to Laravel on the same origin (see the production stack in
 [task-management-docker](https://github.com/cristiangirlea/task-management-docker)). Pass
 `--build-arg NEXT_PUBLIC_API_URL=https://api.example.com/api` to target a separate API host.
 CI builds and runs the image on every pull request and merge; `release.yml` publishes it to

@@ -54,7 +54,7 @@ export default function ApiTokensCard({ notify }: Props) {
     return (
         <SettingsCard
             title="API tokens"
-            description="Personal tokens let MCP clients such as Claude Code use the API on your behalf."
+            description="For MCP clients that cannot connect by themselves (see Connected apps): a personal token, sent as a header, lets them use the API on your behalf."
         >
             <form onSubmit={create} className="flex flex-col gap-2 sm:flex-row sm:items-end">
                 <TextField

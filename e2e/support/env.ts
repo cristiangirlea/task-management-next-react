@@ -1,3 +1,4 @@
+import { generateKeyPairSync } from 'node:crypto';
 import { existsSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -15,6 +16,13 @@ export const DB_FILE = process.env.E2E_DB ?? path.join(tmpdir(), 'task-board-e2e
 /** The page origin: a proxy that, like Caddy in production, serves the app and the API together. */
 export const ORIGIN = 'http://localhost:3200';
 export const PORTS = { api: 8000, web: 3100, proxy: 3200 } as const;
+
+// OAuth for MCP clients signs its tokens with an RSA key pair; a throwaway one per run.
+const oauthKeys = generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+    publicKeyEncoding: { type: 'spki', format: 'pem' },
+    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+});
 
 /** Environment for the API server and for artisan commands run by the tests. */
 export const API_ENV: Record<string, string> = {
@@ -41,6 +49,8 @@ export const API_ENV: Record<string, string> = {
     STRIPE_PRICE_ID: 'price_e2e',
     BILLING_FREE_SEATS: '3',
     BILLING_SEAT_PRICE_CENTS: '800',
+    PASSPORT_PRIVATE_KEY: oauthKeys.privateKey,
+    PASSPORT_PUBLIC_KEY: oauthKeys.publicKey,
 };
 
 export function ensureDatabaseFile(): void {
