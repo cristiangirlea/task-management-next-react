@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import { AuthProvider } from '@/lib/auth';
@@ -6,6 +6,17 @@ import { AuthProvider } from '@/lib/auth';
 export const metadata: Metadata = {
     title: 'Task Board',
     description: 'Kanban task board backed by a Laravel API',
+    applicationName: 'Task Board',
+    // Installed on an iPhone's home screen: the name under the icon, and full screen.
+    appleWebApp: { title: 'Task Board', statusBarStyle: 'default' },
+};
+
+// The navbar's colour (daisyUI base-100) in the light and dark themes.
+export const viewport: Viewport = {
+    themeColor: [
+        { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+        { media: '(prefers-color-scheme: dark)', color: '#1d232a' },
+    ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

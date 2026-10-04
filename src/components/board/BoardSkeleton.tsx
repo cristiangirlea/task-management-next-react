@@ -4,7 +4,7 @@ export default function BoardSkeleton() {
             {[0, 1, 2].map((column) => (
                 <div
                     key={column}
-                    className="flex w-72 shrink-0 flex-col gap-3 rounded-box bg-base-100 p-4 shadow-sm sm:w-80"
+                    className="flex w-[85%] shrink-0 flex-col gap-3 rounded-box bg-base-100 p-4 shadow-sm sm:w-80"
                 >
                     <div className="skeleton h-5 w-24" />
                     {[0, 1, 2].map((card) => (
