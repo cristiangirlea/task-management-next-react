@@ -47,9 +47,14 @@ export default function TaskFormModal({ state, projectId, onClose, onCreate, onU
             description: description.trim() || null,
             priority,
             due_date: dueDate || null,
-            status,
         };
-        const ok = await run(() => (editing ? onUpdate(editing.id, fields) : onCreate({ ...fields, project_id: projectId })));
+        // Only a changed column is sent, so an edit made on a stale board does not undo
+        // a move someone else (or an MCP client) made in the meantime.
+        const ok = await run(() =>
+            editing
+                ? onUpdate(editing.id, status === editing.status ? fields : { ...fields, status })
+                : onCreate({ ...fields, status, project_id: projectId }),
+        );
         if (ok) {
             notify('success', editing ? 'Task updated' : 'Task created');
             onClose();

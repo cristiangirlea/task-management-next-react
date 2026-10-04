@@ -1,9 +1,15 @@
-import { expect, signIn, test } from './support/fixtures';
+import { expect, signIn, sql, test } from './support/fixtures';
 
 test.describe('on a phone', () => {
     test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 
     test('the board fits the screen, and the switcher moves between columns', async ({ page }) => {
+        // A Done column taller than the screen: the switcher must not scroll the page to it.
+        for (let copy = 1; copy <= 4; copy++) {
+            sql(`insert into tasks (title, status, priority, position, project_id, user_id, tenant_id, created_at, updated_at)
+                 select title || ' (${copy})', status, priority, position + ${copy * 100}, project_id, user_id, tenant_id, created_at, updated_at
+                 from tasks where status = 'completed' and title not like '% (_)'`);
+        }
         await signIn(page);
         const todo = page.getByRole('region', { name: 'To do' });
         const done = page.getByRole('region', { name: 'Done' });
@@ -15,11 +21,12 @@ test.describe('on a phone', () => {
 
         const switcher = page.getByRole('group', { name: 'Columns' });
         await expect(switcher.getByRole('button', { name: /To do/ })).toHaveAttribute('aria-pressed', 'true');
-        await expect(done).not.toBeInViewport({ ratio: 0.9 });
+        await expect(done.locator('header')).not.toBeInViewport();
 
         await switcher.getByRole('button', { name: /Done/ }).click();
-        await expect(done).toBeInViewport({ ratio: 0.9 });
+        await expect(done.locator('header')).toBeInViewport({ ratio: 0.9 });
         await expect(switcher.getByRole('button', { name: /Done/ })).toHaveAttribute('aria-pressed', 'true');
+        expect(await page.evaluate(() => window.scrollY)).toBe(0);
     });
 
     test('a task moves to another column from its dialog, without dragging', async ({ page }) => {
@@ -38,6 +45,21 @@ test.describe('on a phone', () => {
         await expect(page.getByText('Task updated')).toBeVisible();
         await expect(done.getByRole('heading', { level: 3 }).last()).toHaveText(title);
         await expect(todo.getByRole('heading', { name: title })).toHaveCount(0);
+    });
+
+    test('editing a task does not undo a move made elsewhere while the board was open', async ({ page }) => {
+        await signIn(page);
+        const todo = page.getByRole('region', { name: 'To do' });
+        const title = (await todo.getByRole('heading', { level: 3 }).first().textContent())!.trim();
+
+        await todo.getByRole('heading', { name: title }).tap();
+        sql(`update tasks set status = 'in_progress' where title = '${title.replace(/'/g, "''")}'`);
+        const dialog = page.getByRole('dialog');
+        await dialog.getByLabel('Title').fill(`${title} (edited)`);
+        await dialog.getByRole('button', { name: 'Save' }).click();
+
+        await expect(page.getByText('Task updated')).toBeVisible();
+        await expect(page.getByRole('region', { name: 'In progress' }).getByRole('heading', { name: `${title} (edited)` })).toBeAttached();
     });
 });
 

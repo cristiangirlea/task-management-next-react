@@ -45,10 +45,11 @@ export default function KanbanBoard({ projectId, notify }: Props) {
         node.querySelectorAll('[data-column]').forEach((column) => observer.observe(column));
         return () => observer.disconnect();
     }, []);
-    const showColumn = (status: TaskStatus) =>
-        row.current
-            ?.querySelector(`[data-column="${status}"]`)
-            ?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+    // Scrolls the row only: scrollIntoView would also scroll the page down to a long column.
+    const showColumn = (status: TaskStatus) => {
+        const column = row.current?.querySelector<HTMLElement>(`[data-column="${status}"]`);
+        if (column) row.current?.scrollTo({ left: column.offsetLeft, behavior: 'smooth' });
+    };
 
     if (loading && tasks.length === 0) return <BoardSkeleton />;
 
