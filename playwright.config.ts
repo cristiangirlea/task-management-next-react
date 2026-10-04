@@ -37,12 +37,19 @@ export default defineConfig({
             stderr: 'ignore',
         },
         {
+            command: 'php artisan reverb:start',
+            cwd: API_DIR,
+            env: API_ENV,
+            url: `http://127.0.0.1:${PORTS.reverb}/up`,
+            reuseExistingServer: false,
+        },
+        {
             command: `node e2e/support/serve-web.mjs ${PORTS.web}`,
             url: `http://127.0.0.1:${PORTS.web}/login`,
             reuseExistingServer: false,
         },
         {
-            command: `node e2e/support/proxy.mjs ${PORTS.proxy} ${PORTS.api} ${PORTS.web}`,
+            command: `node e2e/support/proxy.mjs ${PORTS.proxy} ${PORTS.api} ${PORTS.web} ${PORTS.reverb}`,
             url: `${ORIGIN}/up`,
             reuseExistingServer: false,
         },

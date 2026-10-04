@@ -91,7 +91,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: mbstring, pdo, pdo_sqlite, sqlite3, bcmath
+          extensions: mbstring, pdo, pdo_sqlite, sqlite3, bcmath, pcntl
           coverage: none
         env:
           runner: self-hosted

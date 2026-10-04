@@ -207,3 +207,14 @@ export type UpdateTaskInput = Partial<Omit<CreateTaskInput, 'project_id'>>;
 
 /** Laravel-style validation errors: field name -> list of messages. */
 export type ValidationErrors = Record<string, string[]>;
+
+/** How the board listens for live updates; `url` is null when it is this site. */
+export type BroadcastingConfig = {
+    key: string;
+    url: string | null;
+};
+
+/** Laravel's answer to a channel authorization request. */
+export type ChannelAuthorization = {
+    auth: string;
+};

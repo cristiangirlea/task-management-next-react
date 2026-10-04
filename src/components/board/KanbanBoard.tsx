@@ -18,9 +18,9 @@ type Props = {
 };
 
 export default function KanbanBoard({ projectId, notify }: Props) {
-    const { tasks, setTasks, loading, error, refresh, create, update, remove } = useTasks(projectId);
+    const { tasks, setTasks, loading, error, refresh, create, update, remove, hold, release } = useTasks(projectId);
     const onError = useCallback((text: string) => notify('error', text), [notify]);
-    const dnd = useBoardDnd({ tasks, setTasks, onError, refresh });
+    const dnd = useBoardDnd({ tasks, setTasks, onError, refresh, hold, release });
     const [modal, setModal] = useState<TaskModalState | null>(null);
     const closeModal = useCallback(() => setModal(null), []);
     const dndId = useId();

@@ -15,7 +15,7 @@ export const DB_FILE = process.env.E2E_DB ?? path.join(tmpdir(), 'task-board-e2e
 
 /** The page origin: a proxy that, like Caddy in production, serves the app and the API together. */
 export const ORIGIN = 'http://localhost:3200';
-export const PORTS = { api: 8000, web: 3100, proxy: 3200 } as const;
+export const PORTS = { api: 8000, web: 3100, proxy: 3200, reverb: 8090 } as const;
 
 // OAuth for MCP clients signs its tokens with an RSA key pair; a throwaway one per run.
 const oauthKeys = generateKeyPairSync('rsa', {
@@ -49,6 +49,17 @@ export const API_ENV: Record<string, string> = {
     STRIPE_PRICE_ID: 'price_e2e',
     BILLING_FREE_SEATS: '3',
     BILLING_SEAT_PRICE_CENTS: '800',
+    // Live board updates: the API sends events to Reverb on its own port; browsers
+    // reach it through the proxy, on this origin, like Caddy in production.
+    BROADCAST_CONNECTION: 'reverb',
+    REVERB_APP_ID: 'e2e',
+    REVERB_APP_KEY: 'e2e-key',
+    REVERB_APP_SECRET: 'e2e-secret',
+    REVERB_HOST: '127.0.0.1',
+    REVERB_PORT: String(PORTS.reverb),
+    REVERB_SCHEME: 'http',
+    REVERB_SERVER_HOST: '127.0.0.1',
+    REVERB_SERVER_PORT: String(PORTS.reverb),
     PASSPORT_PRIVATE_KEY: oauthKeys.privateKey,
     PASSPORT_PUBLIC_KEY: oauthKeys.publicKey,
 };

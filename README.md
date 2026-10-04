@@ -21,6 +21,11 @@ Copy `.env.example` to `.env.local` and adjust as needed:
 with `/api`, which means "the API on this page's own origin" (the front proxy routes `/api`,
 `/mcp`, `/oauth` and `/.well-known` to Laravel), so one image works on any domain.
 
+Live board updates need nothing here. The board asks the API for them
+(`GET /api/broadcasting/config`): when the API runs Reverb, the board connects to it over a
+WebSocket (on this site's `/app`, or the API's `REVERB_PUBLIC_URL`) and reloads its tasks when
+another browser or an MCP client changes them. When it does not, the board updates on reload.
+
 ## Getting started
 
 ```bash
