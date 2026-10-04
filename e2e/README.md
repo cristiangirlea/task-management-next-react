@@ -6,6 +6,7 @@ origin as in production:
 ```
 browser ──> localhost:3200 (e2e/support/proxy.mjs, standing in for Caddy)
               ├── /api, /mcp, /up, /oauth, /.well-known ──> Laravel on :8000 (php -S, SQLite)
+              ├── /app (WebSocket) ──> Reverb on :8090 (php artisan reverb:start)
               └── everything else ──> Next.js standalone server on :3100
 ```
 
@@ -18,7 +19,7 @@ client's redirect URI, and exchange the code; the API signs tokens with a key pa
 
 ## Running them
 
-You need PHP 8.4 (with `pdo_sqlite` and `bcmath`) and a checkout of
+You need PHP 8.4 (with `pdo_sqlite` and `bcmath`, and `pcntl` on Linux and macOS for Reverb) and a checkout of
 [task-management-app](https://github.com/cristiangirlea/task-management-app) with
 `composer install` done. It is expected next to this repo; point `E2E_API_DIR` elsewhere.
 
@@ -34,7 +35,7 @@ npm run e2e
 | `E2E_DB` | `<tmp>/task-board-e2e.sqlite` | SQLite file the API uses (reset per test) |
 | `PLAYWRIGHT_CHROMIUM_EXECUTABLE` | | Use an already installed Chromium instead of Playwright's |
 
-Ports 3100, 3200 and 8000 must be free. The API's log is `storage/logs/laravel.log` in
+Ports 3100, 3200, 8000 and 8090 must be free. The API's log is `storage/logs/laravel.log` in
 the API checkout.
 
 CI runs them on every pull request and merge to `master` against the API's `master` (the `e2e` job in

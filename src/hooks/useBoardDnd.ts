@@ -27,6 +27,9 @@ type Options = {
     /** Called after a failed persist, once the board has been refetched. */
     onError: (message: string) => void;
     refresh: () => Promise<unknown>;
+    /** Hold live reloads back from pick-up until the drop is saved (see useTasks). */
+    hold: () => void;
+    release: () => void;
 };
 
 type DropTarget = { status: TaskStatus; index: number };
@@ -54,7 +57,7 @@ async function persist(plan: ReorderCall[]): Promise<void> {
     }
 }
 
-export function useBoardDnd({ tasks, setTasks, onError, refresh }: Options) {
+export function useBoardDnd({ tasks, setTasks, onError, refresh, hold, release }: Options) {
     const [activeId, setActiveId] = useState<number | null>(null);
     const snapshot = useRef<Task[]>([]);
 
@@ -66,10 +69,11 @@ export function useBoardDnd({ tasks, setTasks, onError, refresh }: Options) {
 
     const onDragStart = useCallback(
         ({ active }: DragStartEvent) => {
+            hold();
             snapshot.current = tasks;
             setActiveId(Number(active.id));
         },
-        [tasks],
+        [tasks, hold],
     );
 
     // Moving between columns happens live so the card visually joins its new column.
@@ -87,7 +91,8 @@ export function useBoardDnd({ tasks, setTasks, onError, refresh }: Options) {
     const onDragCancel = useCallback(() => {
         setTasks(snapshot.current);
         setActiveId(null);
-    }, [setTasks]);
+        release();
+    }, [setTasks, release]);
 
     const onDragEnd = useCallback(
         ({ active, over }: DragEndEvent) => {
@@ -96,6 +101,7 @@ export function useBoardDnd({ tasks, setTasks, onError, refresh }: Options) {
             const target = over ? resolveTarget(over, tasks) : null;
             if (!target) {
                 setTasks(before);
+                release();
                 return;
             }
 
@@ -104,14 +110,19 @@ export function useBoardDnd({ tasks, setTasks, onError, refresh }: Options) {
             setTasks(after);
 
             const plan = reorderPlan(before, after, taskId);
-            if (plan.length === 0) return;
+            if (plan.length === 0) {
+                release();
+                return;
+            }
 
-            persist(plan).catch(async (err: unknown) => {
-                await refresh();
-                onError(`Could not save the new order: ${errorMessage(err)}`);
-            });
+            persist(plan)
+                .catch(async (err: unknown) => {
+                    await refresh();
+                    onError(`Could not save the new order: ${errorMessage(err)}`);
+                })
+                .finally(release);
         },
-        [tasks, setTasks, refresh, onError],
+        [tasks, setTasks, refresh, onError, release],
     );
 
     const activeTask = activeId === null ? null : (tasks.find((t) => t.id === activeId) ?? null);

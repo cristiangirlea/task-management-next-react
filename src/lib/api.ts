@@ -4,6 +4,8 @@ import type {
     ApiTokenInput,
     AuthPayload,
     Billing,
+    BroadcastingConfig,
+    ChannelAuthorization,
     CreatedApiToken,
     CreateTaskInput,
     ForgotPasswordInput,
@@ -81,6 +83,18 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): voi
     onUnauthorized = handler;
 }
 
+type SocketIdProvider = () => string | undefined;
+let socketId: SocketIdProvider | null = null;
+
+/**
+ * Registered while the board listens for live updates: every request then
+ * names this browser's connection (X-Socket-ID), so the API does not send the
+ * browser news of its own changes.
+ */
+export function setSocketIdProvider(provider: SocketIdProvider | null): void {
+    socketId = provider;
+}
+
 type Envelope<T> = {
     status: 'success' | 'error';
     message: string;
@@ -92,16 +106,20 @@ type RequestOptions = {
     body?: unknown;
     /** Set to false for login/register so a 401 is reported instead of triggering a redirect. */
     auth?: boolean;
+    /** Set to false for the few Laravel responses that are not wrapped in { status, message, data }. */
+    envelope?: boolean;
 };
 
 async function request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
-    const { body, auth = true } = options;
+    const { body, auth = true, envelope = true } = options;
     const headers: Record<string, string> = {
         Accept: 'application/json',
         'Content-Type': 'application/json',
     };
     const token = auth ? getToken() : null;
     if (token) headers.Authorization = `Bearer ${token}`;
+    const socket = socketId?.();
+    if (socket) headers['X-Socket-ID'] = socket;
 
     let response: Response;
     try {
@@ -135,7 +153,7 @@ async function request<T>(method: string, path: string, options: RequestOptions 
         throw new ApiError(response.status, message, payload?.errors);
     }
 
-    return payload?.data as T;
+    return (envelope ? payload?.data : payload) as T;
 }
 
 // Auth
@@ -202,6 +220,16 @@ export const updateTask = (id: number, input: UpdateTaskInput) =>
     request<Task>('PUT', `/tasks/${id}`, { body: input });
 
 export const deleteTask = (id: number) => request<void>('DELETE', `/tasks/${id}`);
+
+/** Live board updates: Reverb's public key and address, or null when they are off. */
+export const getBroadcastingConfig = () => request<BroadcastingConfig | null>('GET', '/broadcasting/config');
+
+/** Lets this browser's connection listen on a private channel (Pusher's channel authorization). */
+export const authorizeChannel = (socketId: string, channelName: string) =>
+    request<ChannelAuthorization>('POST', '/broadcasting/auth', {
+        body: { socket_id: socketId, channel_name: channelName },
+        envelope: false,
+    });
 
 export const reorderTasks = (status: TaskStatus, taskIds: number[]) =>
     request<Task[]>('POST', '/tasks/reorder', { body: { status, task_ids: taskIds } });
