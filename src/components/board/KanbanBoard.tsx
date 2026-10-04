@@ -1,11 +1,12 @@
 'use client';
 
 import { DndContext, DragOverlay } from '@dnd-kit/core';
-import { useCallback, useId, useMemo, useState } from 'react';
+import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { useBoardDnd } from '@/hooks/useBoardDnd';
 import { useTasks } from '@/hooks/useTasks';
 import type { ToastMessage } from '@/hooks/useToast';
-import { COLUMNS, groupTasks } from '@/lib/board';
+import { COLUMNS, groupTasks, isTaskStatus } from '@/lib/board';
+import type { TaskStatus } from '@/types';
 import BoardSkeleton from './BoardSkeleton';
 import KanbanColumn from './KanbanColumn';
 import { TaskCardView } from './TaskCard';
@@ -25,6 +26,30 @@ export default function KanbanBoard({ projectId, notify }: Props) {
     const dndId = useId();
     const columns = useMemo(() => groupTasks(tasks), [tasks]);
 
+    // On a phone one column fills the screen; the switcher above the board
+    // shows which one and jumps to the others.
+    const row = useRef<HTMLDivElement | null>(null);
+    const [shown, setShown] = useState<TaskStatus>(COLUMNS[0].status);
+    const observeColumns = useCallback((node: HTMLDivElement | null) => {
+        row.current = node;
+        if (!node) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                for (const entry of entries) {
+                    const status = (entry.target as HTMLElement).dataset.column;
+                    if (entry.isIntersecting && isTaskStatus(status)) setShown(status);
+                }
+            },
+            { root: node, threshold: 0.6 },
+        );
+        node.querySelectorAll('[data-column]').forEach((column) => observer.observe(column));
+        return () => observer.disconnect();
+    }, []);
+    const showColumn = (status: TaskStatus) =>
+        row.current
+            ?.querySelector(`[data-column="${status}"]`)
+            ?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+
     if (loading && tasks.length === 0) return <BoardSkeleton />;
 
     return (
@@ -43,7 +68,24 @@ export default function KanbanBoard({ projectId, notify }: Props) {
                 collisionDetection={dnd.collisionDetection}
                 {...dnd.handlers}
             >
-                <div className="flex snap-x gap-4 overflow-x-auto pb-4">
+                <div className="join w-full sm:hidden" role="group" aria-label="Columns">
+                    {COLUMNS.map((column) => (
+                        <button
+                            key={column.status}
+                            type="button"
+                            className={`btn join-item btn-sm flex-1 flex-nowrap ${shown === column.status ? 'btn-active' : ''}`}
+                            aria-pressed={shown === column.status}
+                            onClick={() => showColumn(column.status)}
+                        >
+                            {column.title}
+                            <span className="badge badge-ghost badge-sm">{columns[column.status].length}</span>
+                        </button>
+                    ))}
+                </div>
+                {/* `relative` makes this the containing block of the cards' screen-reader-only
+                    text (absolutely positioned), which otherwise escapes the scrolling and
+                    widens the whole page on a phone. */}
+                <div ref={observeColumns} className="relative flex snap-x gap-4 overflow-x-auto pb-4">
                     {COLUMNS.map((column) => (
                         <KanbanColumn
                             key={column.status}

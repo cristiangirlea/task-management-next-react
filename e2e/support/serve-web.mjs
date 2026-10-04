@@ -3,6 +3,7 @@
 // (npm run e2e:build).
 import { cpSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const root = process.cwd();
 const standalone = path.join(root, '.next', 'standalone');
@@ -27,4 +28,4 @@ cpSync(path.join(root, 'public'), path.join(standalone, 'public'), { recursive: 
 
 process.env.HOSTNAME = '127.0.0.1';
 process.env.PORT = process.argv[2] ?? '3100';
-await import(path.join(standalone, 'server.js'));
+await import(pathToFileURL(path.join(standalone, 'server.js')).href);

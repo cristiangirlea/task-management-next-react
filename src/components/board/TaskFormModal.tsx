@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { FieldErrors, FormAlert, TextField } from '@/components/forms/Fields';
 import { useSubmit } from '@/hooks/useSubmit';
 import type { ToastMessage } from '@/hooks/useToast';
-import { PRIORITY_LABELS, toDateInput } from '@/lib/board';
+import { COLUMNS, PRIORITY_LABELS, isTaskStatus, toDateInput } from '@/lib/board';
 import type { CreateTaskInput, Task, TaskPriority, TaskStatus, UpdateTaskInput } from '@/types';
 
 export type TaskModalState = { mode: 'create'; status: TaskStatus } | { mode: 'edit'; task: Task };
@@ -26,6 +26,8 @@ export default function TaskFormModal({ state, projectId, onClose, onCreate, onU
     const [title, setTitle] = useState(editing?.title ?? '');
     const [description, setDescription] = useState(editing?.description ?? '');
     const [priority, setPriority] = useState<TaskPriority>(editing?.priority ?? 3);
+    // Moving a task without dragging it (handy on a phone): it goes to the bottom of the column.
+    const [status, setStatus] = useState<TaskStatus>(state.mode === 'create' ? state.status : state.task.status);
     const [dueDate, setDueDate] = useState(toDateInput(editing?.due_date));
     const [confirmDelete, setConfirmDelete] = useState(false);
     const { submitting, errors, message, run } = useSubmit();
@@ -45,12 +47,9 @@ export default function TaskFormModal({ state, projectId, onClose, onCreate, onU
             description: description.trim() || null,
             priority,
             due_date: dueDate || null,
+            status,
         };
-        const ok = await run(() =>
-            editing
-                ? onUpdate(editing.id, fields)
-                : onCreate({ ...fields, status: state.mode === 'create' ? state.status : undefined, project_id: projectId }),
-        );
+        const ok = await run(() => (editing ? onUpdate(editing.id, fields) : onCreate({ ...fields, project_id: projectId })));
         if (ok) {
             notify('success', editing ? 'Task updated' : 'Task created');
             onClose();
@@ -87,6 +86,24 @@ export default function TaskFormModal({ state, projectId, onClose, onCreate, onU
                         <FieldErrors errors={errors.description} />
                     </label>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <label className="form-control w-full">
+                            <div className="label">
+                                <span className="label-text">Column</span>
+                            </div>
+                            <select
+                                name="status"
+                                className="select select-bordered w-full"
+                                value={status}
+                                onChange={(event) => isTaskStatus(event.target.value) && setStatus(event.target.value)}
+                            >
+                                {COLUMNS.map((column) => (
+                                    <option key={column.status} value={column.status}>
+                                        {column.title}
+                                    </option>
+                                ))}
+                            </select>
+                            <FieldErrors errors={errors.status} />
+                        </label>
                         <label className="form-control w-full">
                             <div className="label">
                                 <span className="label-text">Priority</span>

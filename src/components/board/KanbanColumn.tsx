@@ -21,7 +21,8 @@ export default function KanbanColumn({ status, title, tasks, onAdd, onOpen }: Pr
     return (
         <section
             aria-label={title}
-            className="flex w-72 shrink-0 snap-start flex-col rounded-box bg-base-100 shadow-sm sm:w-80"
+            data-column={status}
+            className="flex w-[85%] shrink-0 snap-start flex-col rounded-box bg-base-100 shadow-sm sm:w-80"
         >
             <header className="flex items-center justify-between px-4 py-3">
                 <h2 className="flex items-center gap-2 font-semibold">
